@@ -46,7 +46,7 @@ body {
 #logoText {
   font-family: "ta-marugo-gf-03", sans-serif;
   font-weight: 400;
-  font-size: 78px;
+  font-size: 215px;
   cursor: pointer;
   transition: transform 0.2s;
 }
@@ -92,7 +92,7 @@ logo.onclick = () => {
     img.src = IMG;
     img.className = "falling-img";
 
-    img.style.left = Math.random() * 100 + "vw";
+    img.style.left = Math.random() * 500 + "vw";
     img.style.width = 40 + Math.random() * 80 + "px";
     img.style.animationDuration = 1 + Math.random() * 2.5 + "s";
     img.style.animationDelay = Math.random() * 0.5 + "s";
