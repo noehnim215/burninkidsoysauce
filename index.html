@@ -4,7 +4,6 @@
 <meta charset="UTF-8">
 <title>burninkidsoysauce</title>
 
-<!-- Adobe Font -->
 <script>
 (function(d) {
 var config = {
@@ -34,25 +33,36 @@ body {
   overflow: hidden;
 }
 
-/* 가운데 텍스트 */
 #intro {
   position: fixed;
   inset: 0;
   display: flex;
   justify-content: center;
   align-items: center;
+  flex-direction: column;
 }
 
 #logoText {
   font-family: "ta-marugo-gf-03", sans-serif;
   font-weight: 400;
-  font-size: 0.5vw;   /* 👈 여기 폰트 크기 */
-  line-height: 0.8;
+  font-size: 72pt; /* 👈 여기 72pt */
+  line-height: 1;
   cursor: pointer;
-  z-index: 10;
+  color: black;
 }
 
-/* 떨어지는 이미지 */
+.controls {
+  margin-top: 20px;
+  font-family: "ta-marugo-gf-03", sans-serif;
+  font-size: 16px;
+}
+
+.controls span {
+  margin: 0 12px;
+  cursor: pointer;
+  border-bottom: 1px solid black;
+}
+
 .circle-img {
   position: fixed;
   top: -160px;
@@ -67,6 +77,13 @@ body {
     top: var(--stopY);
   }
 }
+
+video {
+  position: fixed;
+  inset: 0;
+  object-fit: cover;
+  z-index: -1;
+}
 </style>
 </head>
 
@@ -74,13 +91,47 @@ body {
 
 <div id="intro">
   <div id="logoText">burninkidsoysauce</div>
+
+  <div class="controls">
+    <span id="camBtn">Cam</span>
+    <span id="songBtn">Song</span>
+  </div>
 </div>
+
+<video id="video" autoplay muted playsinline></video>
+<audio id="audio" loop></audio>
 
 <script>
 const logo = document.getElementById("logoText");
-const IMG = "./bksscircle.png"; // 👈 이미지 이름
+const camBtn = document.getElementById("camBtn");
+const songBtn = document.getElementById("songBtn");
+const video = document.getElementById("video");
+const audio = document.getElementById("audio");
+
+const IMG = "./bksscircle.png";
 
 let placed = [];
+
+/* 카메라 */
+camBtn.onclick = async () => {
+  const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+  video.srcObject = stream;
+};
+
+/* 음악 */
+songBtn.onclick = () => {
+  const input = document.createElement("input");
+  input.type = "file";
+  input.accept = "audio/*";
+
+  input.onchange = (e) => {
+    const file = e.target.files[0];
+    audio.src = URL.createObjectURL(file);
+    audio.play();
+  };
+
+  input.click();
+};
 
 /* 겹침 체크 */
 function isOverlapping(x, y, r) {
@@ -110,8 +161,8 @@ function findSpot(size) {
   return null;
 }
 
+/* 클릭 → 원 쌓임 */
 logo.onclick = () => {
-
   logo.style.pointerEvents = "none";
 
   let count = 0;
@@ -121,7 +172,6 @@ logo.onclick = () => {
 
     let size;
 
-    // 점점 커지는 구조
     if (count < 80) {
       size = 15 + Math.random() * 20;
     } else if (count < 180) {
