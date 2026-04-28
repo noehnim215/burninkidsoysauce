@@ -4,7 +4,6 @@
 <meta charset="UTF-8">
 <title>burninkidsoysauce</title>
 
-<!-- Adobe Font -->
 <script>
 (function(d) {
 var config = {
@@ -34,7 +33,6 @@ body {
   overflow: hidden;
 }
 
-/* 중앙 텍스트 */
 #intro {
   position: fixed;
   inset: 0;
@@ -52,12 +50,10 @@ body {
   color: black;
 }
 
-/* 버튼 */
 .controls {
-  margin-top: 12px;
+  margin-top: 20px;
   font-family: "ta-marugo-gf-03", sans-serif;
   font-size: 16px;
-}
 }
 
 .controls span {
@@ -66,10 +62,9 @@ body {
   border-bottom: 1px solid black;
 }
 
-/* 떨어지는 이미지 */
 .circle-img {
   position: fixed;
-  top: -200px;
+  top: -260px;
   pointer-events: none;
   animation-name: fall;
   animation-timing-function: ease-in;
@@ -112,13 +107,30 @@ const songBtn = document.getElementById("songBtn");
 const video = document.getElementById("video");
 const audio = document.getElementById("audio");
 
-/* 🔥 랜덤 폰트 크기 (6pt ~ 512pt) */
-const randomSize = 6 + Math.random() * (512 - 6);
-logo.style.fontSize = randomSize + "pt";
-
 const IMG = "./bksscircle.png";
 
 let placed = [];
+
+/* 로고 랜덤 크기
+   대부분 6pt ~ 120pt
+   가끔 120pt ~ 300pt
+   아주 가끔만 300pt 이상 */
+function setRandomLogoSize() {
+  const chance = Math.random();
+  let size;
+
+  if (chance < 0.78) {
+    size = 6 + Math.random() * 114;       // 6~120pt 위주
+  } else if (chance < 0.95) {
+    size = 120 + Math.random() * 180;     // 120~300pt 가끔
+  } else {
+    size = 300 + Math.random() * 212;     // 300~512pt 아주 가끔
+  }
+
+  logo.style.fontSize = size + "pt";
+}
+
+setRandomLogoSize();
 
 /* Cam */
 camBtn.onclick = async () => {
@@ -148,7 +160,7 @@ function isOverlapping(x, y, r) {
     const dy = y - p.y;
     const dist = Math.sqrt(dx * dx + dy * dy);
 
-    if (dist < r + p.r + 4) return true;
+    if (dist < r + p.r + 3) return true;
   }
   return false;
 }
@@ -157,8 +169,8 @@ function isOverlapping(x, y, r) {
 function findSpot(size) {
   const r = size / 2;
 
-  for (let y = window.innerHeight - r; y > r; y -= r * 0.6) {
-    for (let i = 0; i < 120; i++) {
+  for (let y = window.innerHeight - r; y > r; y -= Math.max(4, r * 0.45)) {
+    for (let i = 0; i < 180; i++) {
       const x = r + Math.random() * (window.innerWidth - size);
 
       if (!isOverlapping(x, y, r)) {
@@ -169,26 +181,66 @@ function findSpot(size) {
   return null;
 }
 
+/* 패턴 랜덤 선택 */
+function choosePattern() {
+  const patterns = [
+    {
+      name: "manySmall",
+      total: 520,
+      delay: 12,
+      size: () => 8 + Math.random() * 22
+    },
+    {
+      name: "mixed",
+      total: 360,
+      delay: 18,
+      size: () => {
+        const c = Math.random();
+        if (c < 0.55) return 12 + Math.random() * 25;
+        if (c < 0.88) return 35 + Math.random() * 55;
+        return 90 + Math.random() * 90;
+      }
+    },
+    {
+      name: "bigHeavy",
+      total: 260,
+      delay: 24,
+      size: () => {
+        const c = Math.random();
+        if (c < 0.35) return 18 + Math.random() * 28;
+        if (c < 0.75) return 50 + Math.random() * 70;
+        return 110 + Math.random() * 130;
+      }
+    },
+    {
+      name: "tinyRain",
+      total: 700,
+      delay: 8,
+      size: () => 5 + Math.random() * 16
+    }
+  ];
+
+  return patterns[Math.floor(Math.random() * patterns.length)];
+}
+
 /* 클릭 → 원 쌓임 */
 logo.onclick = () => {
   logo.style.pointerEvents = "none";
 
+  const pattern = choosePattern();
+
   let count = 0;
-  const total = 360; // 더 많이
+  let hasHugeOne = Math.random() < 0.1; // 10번 중 1번 큰 원 하나
+  let hugePlaced = false;
 
   const drop = setInterval(() => {
-
     let size;
 
-    /* 🔥 큰 원 더 많게 */
-    if (count < 80) {
-      size = 20 + Math.random() * 25;
-    } 
-    else if (count < 200) {
-      size = 40 + Math.random() * 60;
-    } 
-    else {
-      size = 80 + Math.random() * 120; // 👈 큰 원
+    if (hasHugeOne && !hugePlaced && count > 20) {
+      size = Math.min(window.innerWidth, window.innerHeight) * (0.45 + Math.random() * 0.2);
+      hugePlaced = true;
+    } else {
+      size = pattern.size();
     }
 
     const spot = findSpot(size);
@@ -204,11 +256,9 @@ logo.onclick = () => {
 
     img.style.width = size + "px";
     img.style.height = size + "px";
-
     img.style.left = (spot.x - size / 2) + "px";
     img.style.setProperty("--stopY", (spot.y - size / 2) + "px");
-
-    img.style.animationDuration = 1 + Math.random() * 2 + "s";
+    img.style.animationDuration = 0.8 + Math.random() * 2.4 + "s";
 
     document.body.appendChild(img);
 
@@ -220,11 +270,11 @@ logo.onclick = () => {
 
     count++;
 
-    if (count >= total) {
+    if (count >= pattern.total) {
       clearInterval(drop);
     }
 
-  }, 20);
+  }, pattern.delay);
 };
 </script>
 
