@@ -86,7 +86,10 @@ body {
 
 #camCanvas {
   position: fixed;
-  inset: 0;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
   display: none;
   transform: scaleX(-1);
 }
@@ -126,29 +129,22 @@ const IMG = "./bksscircle.png";
 let camRunning = false;
 let INK_COLOR = [0,0,0];
 let isGreen = false;
-
 let placed = [];
 
-/* ---------------- LOGO RANDOM SIZE ---------------- */
+/* LOGO SIZE */
 function setRandomLogoSize(){
-  const chance = Math.random();
-  let size;
-
-  if (chance < 0.8) size = 6 + Math.random()*120;
-  else if (chance < 0.95) size = 120 + Math.random()*180;
-  else size = 300 + Math.random()*200;
-
+  let size = Math.random()*200+40;
   logo.style.fontSize = size + "pt";
 }
 setRandomLogoSize();
 
-/* ---------------- CHANGE COLOR ---------------- */
+/* CHANGE COLOR */
 changeBtn.onclick = () => {
   isGreen = !isGreen;
   INK_COLOR = isGreen ? [81,255,14] : [0,0,0];
 };
 
-/* ---------------- CAM ---------------- */
+/* CAM */
 camBtn.onclick = async () => {
   const stream = await navigator.mediaDevices.getUserMedia({ video: true });
   video.srcObject = stream;
@@ -157,8 +153,8 @@ camBtn.onclick = async () => {
   changeBtn.style.display = "block";
 
   video.onloadedmetadata = () => {
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
     camRunning = true;
     processFrame();
   };
@@ -174,9 +170,7 @@ function processFrame(){
 
   for(let i=0;i<data.length;i+=4){
     let gray = (data[i]+data[i+1]+data[i+2])/3;
-
     gray += (Math.random()-0.5)*60;
-
     let v = gray < 110 ? 0 : 255;
 
     data[i]   = v ? 255 : INK_COLOR[0];
@@ -188,7 +182,7 @@ function processFrame(){
   requestAnimationFrame(processFrame);
 }
 
-/* ---------------- SONG ---------------- */
+/* SONG */
 songBtn.onclick = () => {
   document.getElementById("intro").style.display = "none";
 
@@ -212,16 +206,13 @@ songBtn.onclick = () => {
     </style>
 
     <img src="./again1.png" style="
-      width:500px;
-      height:500px;
+      width:360px;
+      height:360px;
       object-fit:cover;
       animation: spin 20s linear infinite;
     ">
 
-    <div id="songList" style="
-      font-size:28px;
-      line-height:1.6;
-    ">
+    <div id="songList" style="font-size:28px;line-height:1.6;">
       <div data="2000.mp3">2000</div>
       <div data="wiimydadgotmeforchristmas.mp3">wiimydadgotmeforchristmas</div>
       <div data="ps2iplayedwithmybrother.mp3">ps2iplayedwithmybrother</div>
@@ -243,19 +234,16 @@ songBtn.onclick = () => {
   const items = wrap.querySelectorAll("#songList div");
 
   items.forEach(el=>{
-    el.style.cursor="pointer";
-
     el.onclick=()=>{
       audio.src = "./" + el.getAttribute("data");
       audio.play();
-
       items.forEach(i=>i.style.color="black");
       el.style.color="#51ff0e";
     }
   });
 };
 
-/* ---------------- CIRCLES ---------------- */
+/* CIRCLES */
 function isOverlap(x,y,r){
   for(let p of placed){
     let dx=x-p.x;
@@ -268,8 +256,8 @@ function isOverlap(x,y,r){
 function findSpot(size){
   let r=size/2;
 
-  for(let y=window.innerHeight-r;y>r;y-=r*0.5){
-    for(let i=0;i<200;i++){
+  for(let y=window.innerHeight-r;y>r;y-=Math.max(2,r*0.3)){
+    for(let i=0;i<300;i++){
       let x=r+Math.random()*(window.innerWidth-size);
       if(!isOverlap(x,y,r)) return {x,y};
     }
@@ -282,32 +270,32 @@ logo.onclick = ()=>{
 
   const drop=setInterval(()=>{
 
-    let size = Math.random()<0.1
-      ? 120+Math.random()*200
-      : 8+Math.random()*30;
+    let size;
+    let c=Math.random();
+
+    if(c<0.7) size=10+Math.random()*30;
+    else if(c<0.95) size=40+Math.random()*80;
+    else size=120+Math.random()*200;
 
     let spot=findSpot(size);
-    if(!spot){
-      clearInterval(drop);
-      return;
-    }
+    if(!spot){clearInterval(drop);return;}
 
     let img=document.createElement("img");
     img.src=IMG;
     img.className="circle-img";
 
     img.style.width=size+"px";
+    img.style.height=size+"px";
     img.style.left=(spot.x-size/2)+"px";
     img.style.setProperty("--stopY",(spot.y-size/2)+"px");
-    img.style.animationDuration=1+Math.random()*2+"s";
+    img.style.animationDuration=0.6+Math.random()*2+"s";
 
     document.body.appendChild(img);
-
     placed.push({x:spot.x,y:spot.y,r:size/2});
 
-    if(++count>900) clearInterval(drop);
+    if(++count>1200) clearInterval(drop);
 
-  },5);
+  },15);
 };
 </script>
 
