@@ -183,20 +183,39 @@ songBtn.onclick = () => {
 
   document.getElementById("intro").style.display = "none";
 
-  const text = document.createElement("div");
-  text.innerHTML = "6. eolssu 입니다";
+  const wrap = document.createElement("div");
 
-  text.style.position = "fixed";
-  text.style.inset = "0";
-  text.style.display = "flex";
-  text.style.justifyContent = "center";
-  text.style.alignItems = "center";
-  text.style.fontFamily = '"ta-marugo-gf-03", sans-serif';
-  text.style.fontSize = "32px";
-  text.style.color = "black";
-  text.style.zIndex = "50";
+  wrap.style.position = "fixed";
+  wrap.style.inset = "0";
+  wrap.style.display = "flex";
+  wrap.style.justifyContent = "center";
+  wrap.style.alignItems = "center";
+  wrap.style.fontFamily = '"ta-marugo-gf-03", sans-serif';
+  wrap.style.fontSize = "28px";
+  wrap.style.color = "black";
+  wrap.style.zIndex = "50";
+  wrap.style.lineHeight = "1.6";
 
-  document.body.appendChild(text);
+  wrap.innerHTML = `
+    <div style="text-align:left;">
+    1. 2000<br>
+    2. wiimydadgotmeforchristmas<br>
+    3. ps2iplayedwithmybrother<br>
+    4. girl<br>
+    5. 2ear<br>
+    6. eolssu<br>
+    7. dance<br>
+    8. how sweet it is<br>
+    9. get up<br>
+    10. sierra<br>
+    11. friends<br>
+    12. emptyyourmind<br>
+    13. circle
+    </div>
+  `;
+
+  document.body.appendChild(wrap);
+};
 };
 
 /* ---------------- 원 떨어지는거 ---------------- */
