@@ -4,7 +4,6 @@
 <meta charset="UTF-8">
 <title>burninkidsoysauce</title>
 
-<!-- Adobe Font -->
 <script>
 (function(d) {
 var config = {
@@ -34,7 +33,6 @@ body {
   overflow: hidden;
 }
 
-/* 가운데 텍스트 */
 #intro {
   position: fixed;
   inset: 0;
@@ -46,27 +44,25 @@ body {
 #logoText {
   font-family: "ta-marugo-gf-03", sans-serif;
   font-weight: 400;
-  font-size: 512px;
+  font-size: 12vw;
+  line-height: 0.9;
   cursor: pointer;
-  transition: transform 0.2s;
+  transform: scaleX(1.08);
 }
 
-#logoText:hover {
-  transform: scale(1.05);
-}
-
-/* 떨어지는 이미지 */
 .falling-img {
   position: fixed;
-  top: -120px;
-  width: 80px;
+  top: -200px;
   pointer-events: none;
-  animation: fall linear forwards;
+  animation-name: fall;
+  animation-timing-function: linear;
+  animation-fill-mode: forwards;
 }
 
 @keyframes fall {
   to {
-    transform: translateY(120vh) rotate(720deg);
+    top: var(--stopY);
+    transform: rotate(var(--rotate));
   }
 }
 </style>
@@ -80,32 +76,48 @@ body {
 
 <script>
 const logo = document.getElementById("logoText");
-
-// 👇 여기 네 이미지 경로 (왼쪽 폴더에 맞게)
-const IMG = "bksscircle.png";
+const IMG = "first.png";
 
 logo.onclick = () => {
+  logo.style.pointerEvents = "none";
 
-  // 이미지 우수수 떨어짐
-  for (let i = 0; i < 50; i++) {
+  let count = 0;
+  const total = 170;
+  const floor = window.innerHeight - 70;
+
+  const drop = setInterval(() => {
     const img = document.createElement("img");
     img.src = IMG;
     img.className = "falling-img";
 
-    img.style.left = Math.random() * 500 + "vw";
-    img.style.width = 40 + Math.random() * 80 + "px";
-    img.style.animationDuration = 1 + Math.random() * 2.5 + "s";
-    img.style.animationDelay = Math.random() * 0.5 + "s";
+    let size;
+
+    if (count < 35) {
+      size = 18 + Math.random() * 22;
+    } else if (count < 95) {
+      size = 35 + Math.random() * 55;
+    } else {
+      size = 65 + Math.random() * 95;
+    }
+
+    const left = Math.random() * window.innerWidth;
+    const pileHeight = Math.random() * 180;
+    const stopY = floor - pileHeight;
+
+    img.style.left = left + "px";
+    img.style.width = size + "px";
+    img.style.setProperty("--stopY", stopY + "px");
+    img.style.setProperty("--rotate", (Math.random() * 720 - 360) + "deg");
+    img.style.animationDuration = 1.4 + Math.random() * 2.2 + "s";
 
     document.body.appendChild(img);
 
-    setTimeout(() => img.remove(), 5000);
-  }
+    count++;
 
-  // 화면 사라짐
-  setTimeout(() => {
-    document.getElementById("intro").style.display = "none";
-  }, 1500);
+    if (count >= total) {
+      clearInterval(drop);
+    }
+  }, 45);
 };
 </script>
 
