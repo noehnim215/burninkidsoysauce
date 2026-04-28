@@ -66,7 +66,7 @@ body {
   bottom: 20px;
   display: none;
   cursor: pointer;
-  font-family: "ta-marugo-gf-03";
+  font-family: "ta-marugo-gf-03", sans-serif;
   border-bottom: 1px solid black;
   z-index: 999;
 }
@@ -76,6 +76,7 @@ body {
   top: -200px;
   pointer-events: none;
   animation: fall linear forwards;
+  z-index: 10;
 }
 
 @keyframes fall {
@@ -92,6 +93,11 @@ body {
   height: 100vh;
   display: none;
   transform: scaleX(-1);
+  z-index: 1;
+}
+
+video {
+  display: none;
 }
 </style>
 </head>
@@ -126,14 +132,32 @@ const audio = document.getElementById("audio");
 
 const IMG = "./bksscircle.png";
 
+/* =========================
+   CAM SETTINGS
+   여기만 수정하면 됨
+========================= */
+const CAM_NOISE = 60;          // 노이즈 세기: 10 약함 / 60 강함 / 100 매우 강함
+const CAM_THRESHOLD = 110;     // 검정 기준: 높을수록 검정 많아짐
+const CAM_BLUR = 0.5;          // 블러: 0 없음 / 0.5 약함 / 1 강함
+const CAM_MIRROR = true;       // true 좌우반전 / false 원래 방향
+const CAM_BG_COLOR = [255,255,255]; // 배경 색
+const GREEN_COLOR = [81,255,14];    // #51ff0e
+const BLACK_COLOR = [0,0,0];
+
 let camRunning = false;
-let INK_COLOR = [0,0,0];
+let INK_COLOR = BLACK_COLOR;
 let isGreen = false;
 let placed = [];
 
-/* LOGO SIZE */
+/* LOGO RANDOM SIZE */
 function setRandomLogoSize(){
-  let size = Math.random()*200+40;
+  const chance = Math.random();
+  let size;
+
+  if (chance < 0.78) size = 6 + Math.random() * 114;
+  else if (chance < 0.95) size = 120 + Math.random() * 180;
+  else size = 300 + Math.random() * 212;
+
   logo.style.fontSize = size + "pt";
 }
 setRandomLogoSize();
@@ -141,7 +165,7 @@ setRandomLogoSize();
 /* CHANGE COLOR */
 changeBtn.onclick = () => {
   isGreen = !isGreen;
-  INK_COLOR = isGreen ? [81,255,14] : [0,0,0];
+  INK_COLOR = isGreen ? GREEN_COLOR : BLACK_COLOR;
 };
 
 /* CAM */
@@ -150,6 +174,8 @@ camBtn.onclick = async () => {
   video.srcObject = stream;
 
   canvas.style.display = "block";
+  canvas.style.filter = "blur(" + CAM_BLUR + "px)";
+  canvas.style.transform = CAM_MIRROR ? "scaleX(-1)" : "scaleX(1)";
   changeBtn.style.display = "block";
 
   video.onloadedmetadata = () => {
@@ -160,22 +186,52 @@ camBtn.onclick = async () => {
   };
 };
 
+window.addEventListener("resize", () => {
+  if (camRunning) {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+  }
+});
+
+function drawVideoCover() {
+  const vw = video.videoWidth;
+  const vh = video.videoHeight;
+  const cw = canvas.width;
+  const ch = canvas.height;
+
+  const scale = Math.max(cw / vw, ch / vh);
+  const nw = vw * scale;
+  const nh = vh * scale;
+  const dx = (cw - nw) / 2;
+  const dy = (ch - nh) / 2;
+
+  ctx.drawImage(video, dx, dy, nw, nh);
+}
+
 function processFrame(){
   if(!camRunning) return;
 
-  ctx.drawImage(video,0,0,canvas.width,canvas.height);
+  drawVideoCover();
 
   let frame = ctx.getImageData(0,0,canvas.width,canvas.height);
   let data = frame.data;
 
   for(let i=0;i<data.length;i+=4){
     let gray = (data[i]+data[i+1]+data[i+2])/3;
-    gray += (Math.random()-0.5)*60;
-    let v = gray < 110 ? 0 : 255;
 
-    data[i]   = v ? 255 : INK_COLOR[0];
-    data[i+1] = v ? 255 : INK_COLOR[1];
-    data[i+2] = v ? 255 : INK_COLOR[2];
+    gray += (Math.random()-0.5) * CAM_NOISE;
+
+    let v = gray < CAM_THRESHOLD ? 0 : 255;
+
+    if (v === 0) {
+      data[i] = INK_COLOR[0];
+      data[i+1] = INK_COLOR[1];
+      data[i+2] = INK_COLOR[2];
+    } else {
+      data[i] = CAM_BG_COLOR[0];
+      data[i+1] = CAM_BG_COLOR[1];
+      data[i+2] = CAM_BG_COLOR[2];
+    }
   }
 
   ctx.putImageData(frame,0,0);
@@ -194,7 +250,7 @@ songBtn.onclick = () => {
   wrap.style.alignItems = "center";
   wrap.style.justifyContent = "center";
   wrap.style.gap = "70px";
-  wrap.style.fontFamily = '"ta-marugo-gf-03"';
+  wrap.style.fontFamily = '"ta-marugo-gf-03", sans-serif';
   wrap.style.zIndex = "100";
 
   wrap.innerHTML = `
@@ -210,9 +266,16 @@ songBtn.onclick = () => {
       height:360px;
       object-fit:cover;
       animation: spin 20s linear infinite;
+      position:relative;
+      z-index:0;
     ">
 
-    <div id="songList" style="font-size:28px;line-height:1.6;">
+    <div id="songList" style="
+      font-size:28px;
+      line-height:1.6;
+      position:relative;
+      z-index:2;
+    ">
       <div data="2000.mp3">2000</div>
       <div data="wiimydadgotmeforchristmas.mp3">wiimydadgotmeforchristmas</div>
       <div data="ps2iplayedwithmybrother.mp3">ps2iplayedwithmybrother</div>
@@ -234,12 +297,15 @@ songBtn.onclick = () => {
   const items = wrap.querySelectorAll("#songList div");
 
   items.forEach(el=>{
-    el.onclick=()=>{
+    el.style.cursor = "pointer";
+
+    el.onclick = () => {
       audio.src = "./" + el.getAttribute("data");
       audio.play();
+
       items.forEach(i=>i.style.color="black");
       el.style.color="#51ff0e";
-    }
+    };
   });
 };
 
@@ -256,8 +322,8 @@ function isOverlap(x,y,r){
 function findSpot(size){
   let r=size/2;
 
-  for(let y=window.innerHeight-r;y>r;y-=Math.max(2,r*0.3)){
-    for(let i=0;i<300;i++){
+  for(let y=window.innerHeight-r;y>r;y-=Math.max(2,r*0.25)){
+    for(let i=0;i<500;i++){
       let x=r+Math.random()*(window.innerWidth-size);
       if(!isOverlap(x,y,r)) return {x,y};
     }
@@ -266,36 +332,84 @@ function findSpot(size){
 }
 
 logo.onclick = ()=>{
-  let count=0;
+  let count = 0;
+  const patternChance = Math.random();
+  let pattern;
 
-  const drop=setInterval(()=>{
+  if (patternChance < 0.1) pattern = "hugeOne";
+  else if (patternChance < 0.45) pattern = "tinyFull";
+  else if (patternChance < 0.7) pattern = "mixedBig";
+  else pattern = "random";
+
+  const drop = setInterval(()=>{
 
     let size;
-    let c=Math.random();
 
-    if(c<0.7) size=10+Math.random()*30;
-    else if(c<0.95) size=40+Math.random()*80;
-    else size=120+Math.random()*200;
+    if (pattern === "hugeOne") {
+      if (count === 0) {
+        size = Math.max(window.innerWidth, window.innerHeight) * 1.15;
+      } else {
+        size = 8 + Math.random() * 25;
+      }
+    }
 
-    let spot=findSpot(size);
-    if(!spot){clearInterval(drop);return;}
+    else if (pattern === "tinyFull") {
+      size = 4 + Math.random() * 14;
+    }
 
-    let img=document.createElement("img");
-    img.src=IMG;
-    img.className="circle-img";
+    else if (pattern === "mixedBig") {
+      const c = Math.random();
+      if (c < 0.45) size = 10 + Math.random() * 25;
+      else if (c < 0.85) size = 40 + Math.random() * 90;
+      else size = 140 + Math.random() * 220;
+    }
 
-    img.style.width=size+"px";
-    img.style.height=size+"px";
-    img.style.left=(spot.x-size/2)+"px";
+    else {
+      const c = Math.random();
+      if (c < 0.55) size = 6 + Math.random() * 30;
+      else if (c < 0.85) size = 35 + Math.random() * 90;
+      else if (c < 0.97) size = 100 + Math.random() * 180;
+      else size = 260 + Math.random() * 350;
+    }
+
+    let spot;
+
+    if (pattern === "hugeOne" && count === 0) {
+      spot = {
+        x: window.innerWidth / 2,
+        y: window.innerHeight / 2
+      };
+    } else {
+      spot = findSpot(size);
+    }
+
+    if(!spot){
+      clearInterval(drop);
+      return;
+    }
+
+    let img = document.createElement("img");
+    img.src = IMG;
+    img.className = "circle-img";
+
+    img.style.width = size + "px";
+    img.style.height = size + "px";
+    img.style.left = (spot.x - size/2) + "px";
     img.style.setProperty("--stopY",(spot.y-size/2)+"px");
-    img.style.animationDuration=0.6+Math.random()*2+"s";
+    img.style.animationDuration = 0.5 + Math.random()*2 + "s";
 
     document.body.appendChild(img);
+
     placed.push({x:spot.x,y:spot.y,r:size/2});
 
-    if(++count>1200) clearInterval(drop);
+    count++;
 
-  },15);
+    if (pattern === "hugeOne" && count > 250) clearInterval(drop);
+    if (pattern === "tinyFull" && count > 2200) clearInterval(drop);
+    if (pattern === "mixedBig" && count > 900) clearInterval(drop);
+    if (pattern === "random" && count > 1200) clearInterval(drop);
+
+  }, pattern === "tinyFull" ? 4 : 14);
 };
 </script>
 
