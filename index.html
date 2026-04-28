@@ -40,7 +40,7 @@ body {
   justify-content: center;
   align-items: center;
   flex-direction: column;
-  z-index: 5;
+  z-index: 20;
 }
 
 #logoText {
@@ -55,10 +55,24 @@ body {
   margin-top: 20px;
   font-family: "ta-marugo-gf-03", sans-serif;
   font-size: 16px;
+  z-index: 30;
 }
 
 .controls span {
   margin: 0 12px;
+  cursor: pointer;
+  border-bottom: 1px solid black;
+}
+
+#changeBtn {
+  position: fixed;
+  right: 24px;
+  bottom: 24px;
+  z-index: 60;
+  display: none;
+  font-family: "ta-marugo-gf-03", sans-serif;
+  font-size: 16px;
+  color: black;
   cursor: pointer;
   border-bottom: 1px solid black;
 }
@@ -70,7 +84,7 @@ body {
   animation-name: fall;
   animation-timing-function: ease-in;
   animation-fill-mode: forwards;
-  z-index: 3;
+  z-index: 50;
 }
 
 @keyframes fall {
@@ -90,6 +104,9 @@ video {
   height: 100vh;
   z-index: 1;
   display: none;
+  pointer-events: none;
+  transform: scaleX(-1);
+  filter: blur(0.5px);
 }
 </style>
 </head>
@@ -105,6 +122,8 @@ video {
   </div>
 </div>
 
+<span id="changeBtn">Change</span>
+
 <video id="video" autoplay muted playsinline></video>
 <canvas id="camCanvas"></canvas>
 <audio id="audio" loop></audio>
@@ -113,6 +132,7 @@ video {
 const logo = document.getElementById("logoText");
 const camBtn = document.getElementById("camBtn");
 const songBtn = document.getElementById("songBtn");
+const changeBtn = document.getElementById("changeBtn");
 const video = document.getElementById("video");
 const canvas = document.getElementById("camCanvas");
 const ctx = canvas.getContext("2d");
@@ -120,10 +140,18 @@ const audio = document.getElementById("audio");
 
 const IMG = "./bksscircle.png";
 
+const CAM_NOISE = 35;
+const CAM_THRESHOLD = 120;
+const CAM_BLUR = 0.5;
+
+let INK_COLOR = [0, 0, 0];
+let isGreen = false;
+
 let placed = [];
 let camRunning = false;
+let prevGray = null;
+let stillCounter = 0;
 
-/* ---------------- 로고 랜덤 사이즈 ---------------- */
 function setRandomLogoSize() {
   const chance = Math.random();
   let size;
@@ -138,13 +166,22 @@ function setRandomLogoSize() {
 
   logo.style.fontSize = size + "pt";
 }
+
 setRandomLogoSize();
 
-/* ---------------- CAM ---------------- */
+changeBtn.onclick = () => {
+  isGreen = !isGreen;
+  INK_COLOR = isGreen ? [81, 255, 14] : [0, 0, 0];
+};
+
 camBtn.onclick = async () => {
   const stream = await navigator.mediaDevices.getUserMedia({ video: true });
   video.srcObject = stream;
+
   canvas.style.display = "block";
+  canvas.style.pointerEvents = "none";
+  canvas.style.filter = "blur(" + CAM_BLUR + "px)";
+  changeBtn.style.display = "block";
 
   video.onloadedmetadata = () => {
     canvas.width = video.videoWidth;
@@ -154,33 +191,7 @@ camBtn.onclick = async () => {
   };
 };
 
-function processFrame() {
-  if (!camRunning) return;
-
-  ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-
-  let frame = ctx.getImageData(0, 0, canvas.width, canvas.height);
-  let data = frame.data;
-
-  for (let i = 0; i < data.length; i += 4) {
-    let gray = (data[i] + data[i+1] + data[i+2]) / 3;
-
-    gray += (Math.random() - 0.5) * 60;
-
-    let v = gray < 110 ? 0 : 255;
-
-    data[i] = v;
-    data[i+1] = v;
-    data[i+2] = v;
-  }
-
-  ctx.putImageData(frame, 0, 0);
-  requestAnimationFrame(processFrame);
-}
-
-/* ---------------- SONG (여기만 추가됨) ---------------- */
 songBtn.onclick = () => {
-
   document.getElementById("intro").style.display = "none";
 
   const wrap = document.createElement("div");
@@ -193,7 +204,7 @@ songBtn.onclick = () => {
   wrap.style.fontFamily = '"ta-marugo-gf-03", sans-serif';
   wrap.style.fontSize = "28px";
   wrap.style.color = "black";
-  wrap.style.zIndex = "50";
+  wrap.style.zIndex = "70";
   wrap.style.lineHeight = "1.6";
 
   wrap.innerHTML = `
@@ -216,15 +227,95 @@ songBtn.onclick = () => {
 
   document.body.appendChild(wrap);
 };
-};
 
-/* ---------------- 원 떨어지는거 ---------------- */
+function processFrame() {
+  if (!camRunning) return;
+
+  ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+  let frame = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  let data = frame.data;
+  let w = canvas.width;
+  let h = canvas.height;
+
+  let grayArr = new Uint8Array(w * h);
+  let output = new Uint8Array(w * h);
+  let diffSum = 0;
+
+  for (let i = 0; i < w * h; i++) {
+    let r = data[i * 4];
+    let g = data[i * 4 + 1];
+    let b = data[i * 4 + 2];
+
+    let gray = 0.299 * r + 0.587 * g + 0.114 * b;
+
+    gray += (Math.random() - 0.5) * CAM_NOISE;
+    gray = Math.max(0, Math.min(255, gray));
+
+    grayArr[i] = gray;
+
+    if (prevGray) {
+      diffSum += Math.abs(gray - prevGray[i]);
+    }
+
+    output[i] = gray < CAM_THRESHOLD ? 0 : 255;
+  }
+
+  if (prevGray) {
+    const diffMean = diffSum / (w * h);
+    stillCounter = diffMean < 2 ? stillCounter + 1 : 0;
+  }
+
+  prevGray = grayArr;
+
+  if (stillCounter > 8) {
+    bleed(output, w, h);
+  }
+
+  for (let i = 0; i < w * h; i++) {
+    const isInk = output[i] < 128;
+
+    data[i * 4] = isInk ? INK_COLOR[0] : 255;
+    data[i * 4 + 1] = isInk ? INK_COLOR[1] : 255;
+    data[i * 4 + 2] = isInk ? INK_COLOR[2] : 255;
+    data[i * 4 + 3] = 255;
+  }
+
+  ctx.putImageData(frame, 0, 0);
+  requestAnimationFrame(processFrame);
+}
+
+function bleed(output, w, h) {
+  const copy = output.slice();
+  const radius = Math.min(3 + Math.floor(stillCounter / 5), 18);
+
+  for (let y = radius; y < h - radius; y += 2) {
+    for (let x = radius; x < w - radius; x += 2) {
+      const i = y * w + x;
+
+      if (copy[i] === 0) {
+        for (let dy = -radius; dy <= radius; dy += 2) {
+          for (let dx = -radius; dx <= radius; dx += 2) {
+            const d = dx * dx + dy * dy;
+
+            if (d < radius * radius && Math.random() > 0.72) {
+              const ni = (y + dy) * w + (x + dx);
+              output[ni] = 0;
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
 function isOverlapping(x, y, r) {
   for (const p of placed) {
     const dx = x - p.x;
     const dy = y - p.y;
     const dist = Math.sqrt(dx * dx + dy * dy);
-    if (dist < r + p.r) return true;
+
+    if (dist < r + p.r - 1) return true;
   }
   return false;
 }
@@ -232,8 +323,8 @@ function isOverlapping(x, y, r) {
 function findSpot(size) {
   const r = size / 2;
 
-  for (let y = window.innerHeight - r; y > r; y -= r * 0.5) {
-    for (let i = 0; i < 200; i++) {
+  for (let y = window.innerHeight - r; y > r; y -= Math.max(2, r * 0.25)) {
+    for (let i = 0; i < 500; i++) {
       const x = r + Math.random() * (window.innerWidth - size);
 
       if (!isOverlapping(x, y, r)) {
@@ -241,18 +332,68 @@ function findSpot(size) {
       }
     }
   }
+
   return null;
 }
 
+function choosePattern() {
+  const patterns = [
+    {
+      total: 1200,
+      delay: 6,
+      size: () => 6 + Math.random() * 18
+    },
+    {
+      total: 900,
+      delay: 8,
+      size: () => {
+        const c = Math.random();
+        if (c < 0.65) return 8 + Math.random() * 20;
+        if (c < 0.92) return 26 + Math.random() * 45;
+        return 75 + Math.random() * 85;
+      }
+    },
+    {
+      total: 650,
+      delay: 10,
+      size: () => {
+        const c = Math.random();
+        if (c < 0.45) return 10 + Math.random() * 25;
+        if (c < 0.82) return 35 + Math.random() * 65;
+        return 90 + Math.random() * 120;
+      }
+    },
+    {
+      total: 1600,
+      delay: 4,
+      size: () => 4 + Math.random() * 12
+    }
+  ];
+
+  return patterns[Math.floor(Math.random() * patterns.length)];
+}
+
 logo.onclick = () => {
+  logo.style.pointerEvents = "none";
+
+  const pattern = choosePattern();
+
   let count = 0;
+  let hasHugeOne = Math.random() < 0.1;
+  let hugePlaced = false;
 
   const drop = setInterval(() => {
+    let size;
 
-    let size = 8 + Math.random() * 30;
-    if (Math.random() < 0.1) size = 100 + Math.random() * 150;
+    if (hasHugeOne && !hugePlaced && count > 20) {
+      size = Math.min(window.innerWidth, window.innerHeight) * (0.45 + Math.random() * 0.2);
+      hugePlaced = true;
+    } else {
+      size = pattern.size();
+    }
 
     const spot = findSpot(size);
+
     if (!spot) {
       clearInterval(drop);
       return;
@@ -264,18 +405,25 @@ logo.onclick = () => {
 
     img.style.width = size + "px";
     img.style.height = size + "px";
-    img.style.left = (spot.x - size/2) + "px";
-    img.style.setProperty("--stopY", (spot.y - size/2) + "px");
-    img.style.animationDuration = 1 + Math.random() * 1.5 + "s";
+    img.style.left = (spot.x - size / 2) + "px";
+    img.style.setProperty("--stopY", (spot.y - size / 2) + "px");
+    img.style.animationDuration = 0.7 + Math.random() * 2 + "s";
 
     document.body.appendChild(img);
 
-    placed.push({ x: spot.x, y: spot.y, r: size/2 });
+    placed.push({
+      x: spot.x,
+      y: spot.y,
+      r: size / 2
+    });
 
     count++;
-    if (count > 800) clearInterval(drop);
 
-  }, 6);
+    if (count >= pattern.total) {
+      clearInterval(drop);
+    }
+
+  }, pattern.delay);
 };
 </script>
 
