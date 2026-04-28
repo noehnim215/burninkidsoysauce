@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <title>burninkidsoysauce</title>
 
+<!-- Adobe Font -->
 <script>
 (function(d) {
 var config = {
@@ -33,6 +34,7 @@ body {
   overflow: hidden;
 }
 
+/* 중앙 텍스트 */
 #intro {
   position: fixed;
   inset: 0;
@@ -44,13 +46,13 @@ body {
 
 #logoText {
   font-family: "ta-marugo-gf-03", sans-serif;
-  font-weight: 0;
-  font-size: 512pt; /* 👈 여기 72pt */
+  font-weight: 400;
   line-height: 1;
   cursor: pointer;
   color: black;
 }
 
+/* 버튼 */
 .controls {
   margin-top: 20px;
   font-family: "ta-marugo-gf-03", sans-serif;
@@ -63,9 +65,10 @@ body {
   border-bottom: 1px solid black;
 }
 
+/* 떨어지는 이미지 */
 .circle-img {
   position: fixed;
-  top: -160px;
+  top: -200px;
   pointer-events: none;
   animation-name: fall;
   animation-timing-function: ease-in;
@@ -108,17 +111,21 @@ const songBtn = document.getElementById("songBtn");
 const video = document.getElementById("video");
 const audio = document.getElementById("audio");
 
+/* 🔥 랜덤 폰트 크기 (6pt ~ 512pt) */
+const randomSize = 6 + Math.random() * (512 - 6);
+logo.style.fontSize = randomSize + "pt";
+
 const IMG = "./bksscircle.png";
 
 let placed = [];
 
-/* 카메라 */
+/* Cam */
 camBtn.onclick = async () => {
   const stream = await navigator.mediaDevices.getUserMedia({ video: true });
   video.srcObject = stream;
 };
 
-/* 음악 */
+/* Song */
 songBtn.onclick = () => {
   const input = document.createElement("input");
   input.type = "file";
@@ -140,7 +147,7 @@ function isOverlapping(x, y, r) {
     const dy = y - p.y;
     const dist = Math.sqrt(dx * dx + dy * dy);
 
-    if (dist < r + p.r + 2) return true;
+    if (dist < r + p.r + 4) return true;
   }
   return false;
 }
@@ -149,8 +156,8 @@ function isOverlapping(x, y, r) {
 function findSpot(size) {
   const r = size / 2;
 
-  for (let y = window.innerHeight - r; y > r; y -= r * 0.5) {
-    for (let i = 0; i < 100; i++) {
+  for (let y = window.innerHeight - r; y > r; y -= r * 0.6) {
+    for (let i = 0; i < 120; i++) {
       const x = r + Math.random() * (window.innerWidth - size);
 
       if (!isOverlapping(x, y, r)) {
@@ -166,18 +173,21 @@ logo.onclick = () => {
   logo.style.pointerEvents = "none";
 
   let count = 0;
-  const total = 300;
+  const total = 360; // 더 많이
 
   const drop = setInterval(() => {
 
     let size;
 
+    /* 🔥 큰 원 더 많게 */
     if (count < 80) {
-      size = 15 + Math.random() * 20;
-    } else if (count < 180) {
-      size = 30 + Math.random() * 40;
-    } else {
-      size = 60 + Math.random() * 70;
+      size = 20 + Math.random() * 25;
+    } 
+    else if (count < 200) {
+      size = 40 + Math.random() * 60;
+    } 
+    else {
+      size = 80 + Math.random() * 120; // 👈 큰 원
     }
 
     const spot = findSpot(size);
@@ -213,7 +223,7 @@ logo.onclick = () => {
       clearInterval(drop);
     }
 
-  }, 25);
+  }, 20);
 };
 </script>
 
