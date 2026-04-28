@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <title>burninkidsoysauce</title>
 
+<!-- Adobe Font 그대로 -->
 <script>
 (function(d) {
 var config = {
@@ -33,6 +34,7 @@ body {
   overflow: hidden;
 }
 
+/* 텍스트 화면 꽉 채우기 */
 #intro {
   position: fixed;
   inset: 0;
@@ -44,25 +46,24 @@ body {
 #logoText {
   font-family: "ta-marugo-gf-03", sans-serif;
   font-weight: 400;
-  font-size: 12vw;
+  font-size: 14vw;
   line-height: 0.9;
   cursor: pointer;
-  transform: scaleX(1.08);
 }
 
-.falling-img {
+/* 원 */
+.circle {
   position: fixed;
-  top: -200px;
+  top: -100px;
+  border-radius: 50%;
+  background: black;
   pointer-events: none;
-  animation-name: fall;
-  animation-timing-function: linear;
-  animation-fill-mode: forwards;
+  animation: fall linear forwards;
 }
 
 @keyframes fall {
   to {
     top: var(--stopY);
-    transform: rotate(var(--rotate));
   }
 }
 </style>
@@ -76,48 +77,53 @@ body {
 
 <script>
 const logo = document.getElementById("logoText");
-const IMG = "first.png";
 
 logo.onclick = () => {
+
   logo.style.pointerEvents = "none";
 
   let count = 0;
-  const total = 170;
-  const floor = window.innerHeight - 70;
+  const total = 260;
+  const floor = window.innerHeight;
 
   const drop = setInterval(() => {
-    const img = document.createElement("img");
-    img.src = IMG;
-    img.className = "falling-img";
+
+    const circle = document.createElement("div");
+    circle.className = "circle";
 
     let size;
 
-    if (count < 35) {
-      size = 18 + Math.random() * 22;
-    } else if (count < 95) {
-      size = 35 + Math.random() * 55;
+    // 처음 작게 → 점점 크게
+    if (count < 60) {
+      size = 6 + Math.random() * 14;
+    } else if (count < 150) {
+      size = 14 + Math.random() * 26;
     } else {
-      size = 65 + Math.random() * 95;
+      size = 28 + Math.random() * 60;
     }
 
     const left = Math.random() * window.innerWidth;
-    const pileHeight = Math.random() * 180;
-    const stopY = floor - pileHeight;
 
-    img.style.left = left + "px";
-    img.style.width = size + "px";
-    img.style.setProperty("--stopY", stopY + "px");
-    img.style.setProperty("--rotate", (Math.random() * 720 - 360) + "deg");
-    img.style.animationDuration = 1.4 + Math.random() * 2.2 + "s";
+    // 쌓이는 느낌 (랜덤 높이 누적)
+    const pile = Math.random() * 250;
+    const stopY = floor - pile;
 
-    document.body.appendChild(img);
+    circle.style.width = size + "px";
+    circle.style.height = size + "px";
+    circle.style.left = left + "px";
+    circle.style.setProperty("--stopY", stopY + "px");
+
+    circle.style.animationDuration = 1.2 + Math.random() * 2 + "s";
+
+    document.body.appendChild(circle);
 
     count++;
 
     if (count >= total) {
       clearInterval(drop);
     }
-  }, 45);
+
+  }, 25);
 };
 </script>
 
