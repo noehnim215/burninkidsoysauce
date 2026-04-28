@@ -40,6 +40,7 @@ body {
   justify-content: center;
   align-items: center;
   flex-direction: column;
+  z-index: 5;
 }
 
 #logoText {
@@ -69,6 +70,7 @@ body {
   animation-name: fall;
   animation-timing-function: ease-in;
   animation-fill-mode: forwards;
+  z-index: 3;
 }
 
 @keyframes fall {
@@ -78,10 +80,16 @@ body {
 }
 
 video {
+  display: none;
+}
+
+#camCanvas {
   position: fixed;
   inset: 0;
-  object-fit: cover;
-  z-index: -1;
+  width: 100vw;
+  height: 100vh;
+  z-index: 1;
+  display: none;
 }
 </style>
 </head>
@@ -98,6 +106,7 @@ video {
 </div>
 
 <video id="video" autoplay muted playsinline></video>
+<canvas id="camCanvas"></canvas>
 <audio id="audio" loop></audio>
 
 <script>
@@ -105,11 +114,17 @@ const logo = document.getElementById("logoText");
 const camBtn = document.getElementById("camBtn");
 const songBtn = document.getElementById("songBtn");
 const video = document.getElementById("video");
+const canvas = document.getElementById("camCanvas");
+const ctx = canvas.getContext("2d");
 const audio = document.getElementById("audio");
 
 const IMG = "./bksscircle.png";
 
 let placed = [];
+let camRunning = false;
+let prevGray = null;
+let stillCounter = 0;
+let echoData = null;
 
 function setRandomLogoSize() {
   const chance = Math.random();
@@ -131,6 +146,15 @@ setRandomLogoSize();
 camBtn.onclick = async () => {
   const stream = await navigator.mediaDevices.getUserMedia({ video: true });
   video.srcObject = stream;
+  canvas.style.display = "block";
+
+  video.onloadedmetadata = () => {
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
+    echoData = new Float32Array(canvas.width * canvas.height);
+    camRunning = true;
+    processFrame();
+  };
 };
 
 songBtn.onclick = () => {
@@ -146,6 +170,101 @@ songBtn.onclick = () => {
 
   input.click();
 };
+
+function processFrame() {
+  if (!camRunning) return;
+
+  ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+  let frame = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  let data = frame.data;
+  let w = canvas.width;
+  let h = canvas.height;
+
+  let grayArr = new Uint8Array(w * h);
+  let output = new Uint8Array(w * h);
+
+  let diffSum = 0;
+
+  for (let i = 0; i < w * h; i++) {
+    let r = data[i * 4];
+    let g = data[i * 4 + 1];
+    let b = data[i * 4 + 2];
+
+    let gray = 0.299 * r + 0.587 * g + 0.114 * b;
+
+    gray += (Math.random() - 0.5) * 70;
+    gray = Math.max(0, Math.min(255, gray));
+
+    grayArr[i] = gray;
+
+    if (prevGray) {
+      diffSum += Math.abs(gray - prevGray[i]);
+    }
+
+    output[i] = gray < 105 ? 0 : 255;
+  }
+
+  if (prevGray) {
+    const diffMean = diffSum / (w * h);
+    if (diffMean < 2) {
+      stillCounter++;
+    } else {
+      stillCounter = 0;
+    }
+  }
+
+  prevGray = grayArr;
+
+  if (stillCounter > 8) {
+    bleed(output, w, h);
+  }
+
+  for (let i = 0; i < w * h; i++) {
+    const dark = output[i] < 128 ? 1 : 0;
+    echoData[i] = echoData[i] * 0.88 + dark * 0.12;
+
+    if (echoData[i] > 0.22) {
+      output[i] = 0;
+    }
+  }
+
+  for (let i = 0; i < w * h; i++) {
+    const isInk = output[i] < 128;
+
+    data[i * 4] = isInk ? 0 : 255;
+    data[i * 4 + 1] = isInk ? 0 : 255;
+    data[i * 4 + 2] = isInk ? 0 : 255;
+    data[i * 4 + 3] = 255;
+  }
+
+  ctx.putImageData(frame, 0, 0);
+  requestAnimationFrame(processFrame);
+}
+
+function bleed(output, w, h) {
+  const copy = output.slice();
+  const radius = Math.min(3 + Math.floor(stillCounter / 5), 18);
+
+  for (let y = radius; y < h - radius; y += 2) {
+    for (let x = radius; x < w - radius; x += 2) {
+      const i = y * w + x;
+
+      if (copy[i] === 0) {
+        for (let dy = -radius; dy <= radius; dy += 2) {
+          for (let dx = -radius; dx <= radius; dx += 2) {
+            const d = dx * dx + dy * dy;
+
+            if (d < radius * radius && Math.random() > 0.72) {
+              const ni = (y + dy) * w + (x + dx);
+              output[ni] = 0;
+            }
+          }
+        }
+      }
+    }
+  }
+}
 
 function isOverlapping(x, y, r) {
   for (const p of placed) {
