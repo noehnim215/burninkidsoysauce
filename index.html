@@ -1,81 +1,6 @@
-<!DOCTYPE html>
-<html>
-<head>
-<meta charset="UTF-8">
-<title>burninkidsoysauce</title>
-
-<script>
-(function(d) {
-var config = {
-kitId: 'wno3het',
-scriptTimeout: 3000,
-async: true
-},
-h=d.documentElement,t=setTimeout(function(){h.className=h.className.replace(/\bwf-loading\b/g,"")+" wf-inactive";},config.scriptTimeout),
-tk=d.createElement("script"),f=false,s=d.getElementsByTagName("script")[0],a;
-h.className+=" wf-loading";
-tk.src='https://use.typekit.net/'+config.kitId+'.js';
-tk.async=true;
-tk.onload=tk.onreadystatechange=function(){
-a=this.readyState;
-if(f||a&&a!="complete"&&a!="loaded")return;
-f=true;clearTimeout(t);
-try{Typekit.load(config)}catch(e){}
-};
-s.parentNode.insertBefore(tk,s)
-})(document);
-</script>
-
-<style>
-body {
-  margin: 0;
-  background: white;
-  overflow: hidden;
-}
-
-#intro {
-  position: fixed;
-  inset: 0;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-}
-
-#logoText {
-  font-family: "ta-marugo-gf-03", sans-serif;
-  font-weight: 400;
-  font-size: 14vw;
-  line-height: 0.9;
-  cursor: pointer;
-  z-index: 10;
-}
-
-.circle-img {
-  position: fixed;
-  top: -160px;
-  pointer-events: none;
-  animation-name: fall;
-  animation-timing-function: ease-in;
-  animation-fill-mode: forwards;
-}
-
-@keyframes fall {
-  to {
-    top: var(--stopY);
-  }
-}
-</style>
-</head>
-
-<body>
-
-<div id="intro">
-  <div id="logoText">burninkidsoysauce</div>
-</div>
-
 <script>
 const logo = document.getElementById("logoText");
-const IMG = "bksscircle.png";
+const IMG = "./bksscircle.png";
 
 let placed = [];
 
@@ -94,13 +19,12 @@ function isOverlapping(x, y, r) {
 
 function findSpot(size) {
   const r = size / 2;
-  const gap = 2;
 
   for (let y = window.innerHeight - r; y > r; y -= r * 0.45) {
     for (let attempt = 0; attempt < 80; attempt++) {
       const x = r + Math.random() * (window.innerWidth - size);
 
-      if (!isOverlapping(x, y, r + gap)) {
+      if (!isOverlapping(x, y, r)) {
         return { x, y };
       }
     }
@@ -139,6 +63,7 @@ logo.onclick = () => {
 
     img.style.width = size + "px";
     img.style.height = size + "px";
+    img.style.objectFit = "contain";
 
     img.style.left = (spot.x - size / 2) + "px";
     img.style.setProperty("--stopY", (spot.y - size / 2) + "px");
@@ -161,6 +86,3 @@ logo.onclick = () => {
   }, 30);
 };
 </script>
-
-</body>
-</html>
