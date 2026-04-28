@@ -4,7 +4,6 @@
 <meta charset="UTF-8">
 <title>burninkidsoysauce</title>
 
-<!-- Adobe Font 그대로 -->
 <script>
 (function(d) {
 var config = {
@@ -34,7 +33,6 @@ body {
   overflow: hidden;
 }
 
-/* 텍스트 화면 꽉 채우기 */
 #intro {
   position: fixed;
   inset: 0;
@@ -49,16 +47,16 @@ body {
   font-size: 14vw;
   line-height: 0.9;
   cursor: pointer;
+  z-index: 10;
 }
 
-/* 원 */
-.circle {
+.circle-img {
   position: fixed;
-  top: -100px;
-  border-radius: 50%;
-  background: black;
+  top: -160px;
   pointer-events: none;
-  animation: fall linear forwards;
+  animation-name: fall;
+  animation-timing-function: ease-in;
+  animation-fill-mode: forwards;
 }
 
 @keyframes fall {
@@ -77,53 +75,90 @@ body {
 
 <script>
 const logo = document.getElementById("logoText");
+const IMG = "bksscircle.png";
+
+let placed = [];
+
+function isOverlapping(x, y, r) {
+  for (const p of placed) {
+    const dx = x - p.x;
+    const dy = y - p.y;
+    const distance = Math.sqrt(dx * dx + dy * dy);
+
+    if (distance < r + p.r + 2) {
+      return true;
+    }
+  }
+  return false;
+}
+
+function findSpot(size) {
+  const r = size / 2;
+  const gap = 2;
+
+  for (let y = window.innerHeight - r; y > r; y -= r * 0.45) {
+    for (let attempt = 0; attempt < 80; attempt++) {
+      const x = r + Math.random() * (window.innerWidth - size);
+
+      if (!isOverlapping(x, y, r + gap)) {
+        return { x, y };
+      }
+    }
+  }
+
+  return null;
+}
 
 logo.onclick = () => {
-
   logo.style.pointerEvents = "none";
 
   let count = 0;
-  const total = 260;
-  const floor = window.innerHeight;
+  const total = 300;
 
   const drop = setInterval(() => {
-
-    const circle = document.createElement("div");
-    circle.className = "circle";
-
     let size;
 
-    // 처음 작게 → 점점 크게
-    if (count < 60) {
-      size = 6 + Math.random() * 14;
-    } else if (count < 150) {
-      size = 14 + Math.random() * 26;
+    if (count < 70) {
+      size = 18 + Math.random() * 20;
+    } else if (count < 170) {
+      size = 35 + Math.random() * 35;
     } else {
-      size = 28 + Math.random() * 60;
+      size = 65 + Math.random() * 70;
     }
 
-    const left = Math.random() * window.innerWidth;
+    const spot = findSpot(size);
 
-    // 쌓이는 느낌 (랜덤 높이 누적)
-    const pile = Math.random() * 250;
-    const stopY = floor - pile;
+    if (!spot) {
+      clearInterval(drop);
+      return;
+    }
 
-    circle.style.width = size + "px";
-    circle.style.height = size + "px";
-    circle.style.left = left + "px";
-    circle.style.setProperty("--stopY", stopY + "px");
+    const img = document.createElement("img");
+    img.src = IMG;
+    img.className = "circle-img";
 
-    circle.style.animationDuration = 1.2 + Math.random() * 2 + "s";
+    img.style.width = size + "px";
+    img.style.height = size + "px";
 
-    document.body.appendChild(circle);
+    img.style.left = (spot.x - size / 2) + "px";
+    img.style.setProperty("--stopY", (spot.y - size / 2) + "px");
+
+    img.style.animationDuration = 1.2 + Math.random() * 1.8 + "s";
+
+    document.body.appendChild(img);
+
+    placed.push({
+      x: spot.x,
+      y: spot.y,
+      r: size / 2
+    });
 
     count++;
 
     if (count >= total) {
       clearInterval(drop);
     }
-
-  }, 25);
+  }, 30);
 };
 </script>
 
