@@ -105,6 +105,8 @@ video {
   <div class="controls">
     <span id="camBtn">Cam</span>
     <span id="songBtn">Song</span>
+    <span id="greenBtn">#51ff0e</span>
+    <span id="blackBtn">Black</span>
   </div>
 </div>
 
@@ -116,6 +118,8 @@ video {
 const logo = document.getElementById("logoText");
 const camBtn = document.getElementById("camBtn");
 const songBtn = document.getElementById("songBtn");
+const greenBtn = document.getElementById("greenBtn");
+const blackBtn = document.getElementById("blackBtn");
 const video = document.getElementById("video");
 const canvas = document.getElementById("camCanvas");
 const ctx = canvas.getContext("2d");
@@ -128,12 +132,14 @@ const CAM_NOISE = 35;
 const CAM_THRESHOLD = 120;
 const CAM_BLUR = 0.5;
 
+/* 카메라 잉크 컬러 */
+let INK_COLOR = [0, 0, 0];
+
 let placed = [];
 let camRunning = false;
 let prevGray = null;
 let stillCounter = 0;
 
-/* 로고 랜덤 크기 */
 function setRandomLogoSize() {
   const chance = Math.random();
   let size;
@@ -151,7 +157,14 @@ function setRandomLogoSize() {
 
 setRandomLogoSize();
 
-/* Cam */
+greenBtn.onclick = () => {
+  INK_COLOR = [81, 255, 14];
+};
+
+blackBtn.onclick = () => {
+  INK_COLOR = [0, 0, 0];
+};
+
 camBtn.onclick = async () => {
   const stream = await navigator.mediaDevices.getUserMedia({ video: true });
   video.srcObject = stream;
@@ -168,7 +181,6 @@ camBtn.onclick = async () => {
   };
 };
 
-/* Song */
 songBtn.onclick = () => {
   const input = document.createElement("input");
   input.type = "file";
@@ -183,7 +195,6 @@ songBtn.onclick = () => {
   input.click();
 };
 
-/* Cam filter */
 function processFrame() {
   if (!camRunning) return;
 
@@ -236,9 +247,9 @@ function processFrame() {
   for (let i = 0; i < w * h; i++) {
     const isInk = output[i] < 128;
 
-    data[i * 4] = isInk ? 0 : 255;
-    data[i * 4 + 1] = isInk ? 0 : 255;
-    data[i * 4 + 2] = isInk ? 0 : 255;
+    data[i * 4] = isInk ? INK_COLOR[0] : 255;
+    data[i * 4 + 1] = isInk ? INK_COLOR[1] : 255;
+    data[i * 4 + 2] = isInk ? INK_COLOR[2] : 255;
     data[i * 4 + 3] = 255;
   }
 
@@ -246,7 +257,6 @@ function processFrame() {
   requestAnimationFrame(processFrame);
 }
 
-/* 잉크 번짐 */
 function bleed(output, w, h) {
   const copy = output.slice();
   const radius = Math.min(3 + Math.floor(stillCounter / 5), 18);
@@ -271,7 +281,6 @@ function bleed(output, w, h) {
   }
 }
 
-/* 원 안 겹치게 쌓기 */
 function isOverlapping(x, y, r) {
   for (const p of placed) {
     const dx = x - p.x;
@@ -340,7 +349,6 @@ function choosePattern() {
   return patterns[Math.floor(Math.random() * patterns.length)];
 }
 
-/* 로고 클릭 → 원 떨어짐 */
 logo.onclick = () => {
   logo.style.pointerEvents = "none";
 
