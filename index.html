@@ -1,31 +1,105 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>burninkidsoysauce</title>
+
+<!-- Adobe Font -->
 <script>
-const logo = document.getElementById("logoText");
-const IMG = "./bksscircle.png";
+(function(d) {
+var config = {
+kitId: 'wno3het',
+scriptTimeout: 3000,
+async: true
+},
+h=d.documentElement,t=setTimeout(function(){h.className=h.className.replace(/\bwf-loading\b/g,"")+" wf-inactive";},config.scriptTimeout),
+tk=d.createElement("script"),f=false,s=d.getElementsByTagName("script")[0],a;
+h.className+=" wf-loading";
+tk.src='https://use.typekit.net/'+config.kitId+'.js';
+tk.async=true;
+tk.onload=tk.onreadystatechange=function(){
+a=this.readyState;
+if(f||a&&a!="complete"&&a!="loaded")return;
+f=true;clearTimeout(t);
+try{Typekit.load(config)}catch(e){}
+};
+s.parentNode.insertBefore(tk,s)
+})(document);
+</script>
+
+<style>
+body {
+  margin: 0;
+  background: white;
+  overflow: hidden;
+}
+
+/* 가운데 텍스트 */
+#intro {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
 #logoText {
   font-family: "ta-marugo-gf-03", sans-serif;
   font-weight: 400;
+  font-size: 20vw;   /* 👈 여기 폰트 크기 */
+  line-height: 0.8;
   cursor: pointer;
+  z-index: 10;
 }
+
+/* 떨어지는 이미지 */
+.circle-img {
+  position: fixed;
+  top: -160px;
+  pointer-events: none;
+  animation-name: fall;
+  animation-timing-function: ease-in;
+  animation-fill-mode: forwards;
+}
+
+@keyframes fall {
+  to {
+    top: var(--stopY);
+  }
+}
+</style>
+</head>
+
+<body>
+
+<div id="intro">
+  <div id="logoText">burninkidsoysauce</div>
+</div>
+
+<script>
+const logo = document.getElementById("logoText");
+const IMG = "./bksscircle.png"; // 👈 이미지 이름
+
 let placed = [];
 
+/* 겹침 체크 */
 function isOverlapping(x, y, r) {
   for (const p of placed) {
     const dx = x - p.x;
     const dy = y - p.y;
-    const distance = Math.sqrt(dx * dx + dy * dy);
+    const dist = Math.sqrt(dx * dx + dy * dy);
 
-    if (distance < r + p.r + 2) {
-      return true;
-    }
+    if (dist < r + p.r + 2) return true;
   }
   return false;
 }
 
+/* 자리 찾기 */
 function findSpot(size) {
   const r = size / 2;
 
-  for (let y = window.innerHeight - r; y > r; y -= r * 0.45) {
-    for (let attempt = 0; attempt < 80; attempt++) {
+  for (let y = window.innerHeight - r; y > r; y -= r * 0.5) {
+    for (let i = 0; i < 100; i++) {
       const x = r + Math.random() * (window.innerWidth - size);
 
       if (!isOverlapping(x, y, r)) {
@@ -33,25 +107,27 @@ function findSpot(size) {
       }
     }
   }
-
   return null;
 }
 
 logo.onclick = () => {
+
   logo.style.pointerEvents = "none";
 
   let count = 0;
   const total = 300;
 
   const drop = setInterval(() => {
+
     let size;
 
-    if (count < 70) {
-      size = 18 + Math.random() * 20;
-    } else if (count < 170) {
-      size = 35 + Math.random() * 35;
+    // 점점 커지는 구조
+    if (count < 80) {
+      size = 15 + Math.random() * 20;
+    } else if (count < 180) {
+      size = 30 + Math.random() * 40;
     } else {
-      size = 65 + Math.random() * 70;
+      size = 60 + Math.random() * 70;
     }
 
     const spot = findSpot(size);
@@ -67,12 +143,11 @@ logo.onclick = () => {
 
     img.style.width = size + "px";
     img.style.height = size + "px";
-    img.style.objectFit = "contain";
 
     img.style.left = (spot.x - size / 2) + "px";
     img.style.setProperty("--stopY", (spot.y - size / 2) + "px");
 
-    img.style.animationDuration = 1.2 + Math.random() * 1.8 + "s";
+    img.style.animationDuration = 1 + Math.random() * 2 + "s";
 
     document.body.appendChild(img);
 
@@ -87,6 +162,10 @@ logo.onclick = () => {
     if (count >= total) {
       clearInterval(drop);
     }
-  }, 30);
+
+  }, 25);
 };
 </script>
+
+</body>
+</html>
