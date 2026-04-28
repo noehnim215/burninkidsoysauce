@@ -181,7 +181,7 @@ function processFrame() {
   let w = canvas.width;
   let h = canvas.height;
 
-  let grayArr = new Uint8Array(w * h);
+  let Arr = new Uint8Array(w * h);
   let output = new Uint8Array(w * h);
 
   let diffSum = 0;
@@ -193,7 +193,7 @@ function processFrame() {
 
     let gray = 0.299 * r + 0.587 * g + 0.114 * b;
 
-    gray += (Math.random() - 0.5) * 70;
+    gray += (Math.random() - 0.5) * 20;
     gray = Math.max(0, Math.min(255, gray));
 
     grayArr[i] = gray;
