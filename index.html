@@ -48,6 +48,16 @@ body {
   cursor: pointer;
 }
 
+/* 날짜 / 시간 폰트 크기 */
+#infoText {
+  margin-top: 12px;
+  font-family: "ta-marugo-gf-03", sans-serif;
+  font-size: 18px;
+  line-height: 1.2;
+  text-align: center;
+}
+
+/* Cam / Song 폰트 크기 여기서 수정 */
 .controls {
   margin-top: 20px;
   font-family: "ta-marugo-gf-03", sans-serif;
@@ -112,6 +122,7 @@ video {
 
 <div id="intro">
   <div id="logoText">burninkidsoysauce</div>
+  <div id="infoText"></div>
 
   <div class="controls">
     <span id="camBtn">Cam</span>
@@ -130,6 +141,7 @@ const logo = document.getElementById("logoText");
 const camBtn = document.getElementById("camBtn");
 const songBtn = document.getElementById("songBtn");
 const changeBtn = document.getElementById("changeBtn");
+const infoText = document.getElementById("infoText");
 
 const video = document.getElementById("video");
 const canvas = document.getElementById("camCanvas");
@@ -167,6 +179,23 @@ function setRandomLogoSize(){
   logo.style.fontSize = size + "pt";
 }
 setRandomLogoSize();
+
+/* DATE + TIME + SECOND */
+function updateInfoText(){
+  const now = new Date();
+
+  const date = now.toLocaleDateString();
+  const time = now.toLocaleTimeString([], {
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit"
+  });
+
+  infoText.innerHTML = date + "<br>" + time;
+}
+
+updateInfoText();
+setInterval(updateInfoText, 1000);
 
 /* CHANGE COLOR */
 changeBtn.onclick = () => {
