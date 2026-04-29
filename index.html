@@ -33,9 +33,9 @@ body {
   overflow: hidden;
 }
 
+/* 텍스트 효과 제거 */
 * {
   -webkit-text-stroke: 0px !important;
-  text-stroke: 0px !important;
   text-shadow: none !important;
 }
 
@@ -98,12 +98,12 @@ body {
   }
 }
 
+/* 🔥 모바일 비율 해결 핵심 */
 #camCanvas {
   position: fixed;
-  top: 0;
-  left: 0;
-  width: 100vw;
-  height: 100vh;
+  inset: 0;
+  width: 100dvw;
+  height: 100dvh;
   display: none;
   transform: scaleX(-1);
   z-index: 1;
@@ -151,7 +151,6 @@ const IMG = "./bksscircle.png";
 const CAM_NOISE = 100;
 const CAM_THRESHOLD = 120;
 const CAM_BLUR = 0.7;
-const CAM_MIRROR = true;
 
 const GREEN_COLOR = [81,255,14];
 const BLACK_COLOR = [0,0,0];
@@ -161,7 +160,7 @@ let INK_COLOR = BLACK_COLOR;
 let isGreen = false;
 let placed = [];
 
-/* LOGO SIZE 그대로 */
+/* 로고 랜덤 */
 function setRandomLogoSize(){
   const chance = Math.random();
   let size;
@@ -174,23 +173,21 @@ function setRandomLogoSize(){
 }
 setRandomLogoSize();
 
-/* DATE + TIME 초까지 */
+/* 날짜 + 초 */
 function updateInfoText(){
   const now = new Date();
-
   const date = now.toLocaleDateString();
   const time = now.toLocaleTimeString([], {
     hour: "2-digit",
     minute: "2-digit",
     second: "2-digit"
   });
-
   infoText.innerHTML = date + " " + time;
 }
 updateInfoText();
 setInterval(updateInfoText,1000);
 
-/* CHANGE COLOR */
+/* 색 변경 */
 changeBtn.onclick = ()=>{
   isGreen=!isGreen;
   INK_COLOR = isGreen ? GREEN_COLOR : BLACK_COLOR;
@@ -203,24 +200,50 @@ camBtn.onclick = async ()=>{
 
   canvas.style.display="block";
   canvas.style.filter = `blur(${CAM_BLUR}px)`;
-  canvas.style.transform = CAM_MIRROR ? "scaleX(-1)" : "scaleX(1)";
   changeBtn.style.display="block";
 
   video.onloadedmetadata = ()=>{
-    canvas.width=window.innerWidth;
-    canvas.height=window.innerHeight;
-    camRunning=true;
+    resizeCanvas();
+    camRunning = true;
     processFrame();
   };
 };
 
+function resizeCanvas(){
+  const rect = canvas.getBoundingClientRect();
+  canvas.width = rect.width * window.devicePixelRatio;
+  canvas.height = rect.height * window.devicePixelRatio;
+  ctx.setTransform(window.devicePixelRatio,0,0,window.devicePixelRatio,0,0);
+}
+
+window.addEventListener("resize", resizeCanvas);
+
+/* 🔥 비율 유지 */
+function drawVideoCover(){
+  const vw = video.videoWidth;
+  const vh = video.videoHeight;
+
+  const rect = canvas.getBoundingClientRect();
+  const cw = rect.width;
+  const ch = rect.height;
+
+  const scale = Math.max(cw/vw, ch/vh);
+  const nw = vw * scale;
+  const nh = vh * scale;
+
+  const dx = (cw - nw)/2;
+  const dy = (ch - nh)/2;
+
+  ctx.drawImage(video, dx, dy, nw, nh);
+}
+
 function processFrame(){
   if(!camRunning) return;
 
-  ctx.drawImage(video,0,0,canvas.width,canvas.height);
+  drawVideoCover();
 
-  let frame=ctx.getImageData(0,0,canvas.width,canvas.height);
-  let data=frame.data;
+  let frame = ctx.getImageData(0,0,canvas.width,canvas.height);
+  let data = frame.data;
 
   for(let i=0;i<data.length;i+=4){
     let gray=(data[i]+data[i+1]+data[i+2])/3;
@@ -268,39 +291,9 @@ songBtn.onclick = ()=>{
       object-fit:cover;
       animation:spin 20s linear infinite;
     ">
-
-    <div id="songList" style="font-size:28px;line-height:1.6;">
-      <div data="2000.mp3">2000</div>
-      <div data="wiimydadgotmeforchristmas.mp3">wiimydadgotmeforchristmas</div>
-      <div data="ps2iplayedwithmybrother.mp3">ps2iplayedwithmybrother</div>
-      <div data="girl.mp3">girl</div>
-      <div data="2ear.mp3">2ear</div>
-      <div data="eolssu.mp3">eolssu</div>
-      <div data="dance.mp3">dance</div>
-      <div data="how sweet it is.mp3">how sweet it is</div>
-      <div data="get up.mp3">get up</div>
-      <div data="sierra.mp3">sierra</div>
-      <div data="friends.mp3">friends</div>
-      <div data="emptyyourmind.mp3">emptyyourmind</div>
-      <div data="circle.mp3">circle</div>
-    </div>
   `;
 
   document.body.appendChild(wrap);
-
-  const items=wrap.querySelectorAll("#songList div");
-
-  items.forEach(el=>{
-    el.style.cursor="pointer";
-
-    el.onclick=()=>{
-      audio.src="./"+el.getAttribute("data");
-      audio.play();
-
-      items.forEach(i=>i.style.color="black");
-      el.style.color="#51ff0e";
-    };
-  });
 };
 
 /* CIRCLES */
@@ -332,7 +325,7 @@ logo.onclick=()=>{
     let size=10+Math.random()*80;
 
     if(Math.random()<0.1){
-      size=180+Math.random()*260;
+      size=200+Math.random()*300;
     }
 
     let spot=findSpot(size);
