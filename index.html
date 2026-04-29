@@ -33,12 +33,6 @@ body {
   overflow: hidden;
 }
 
-* {
-  -webkit-text-stroke: 0px !important;
-  text-stroke: 0px !important;
-  text-shadow: none !important;
-}
-
 #intro {
   position: fixed;
   inset: 0;
@@ -54,16 +48,10 @@ body {
   cursor: pointer;
 }
 
-#infoText {
-  margin-top: 10px;
-  font-family: "ta-marugo-gf-03", sans-serif;
-  font-size: 36pt;
-}
-
 .controls {
   margin-top: 20px;
   font-family: "ta-marugo-gf-03", sans-serif;
-  font-size: 36pt;
+  font-size: 16px;
 }
 
 .controls span {
@@ -79,7 +67,6 @@ body {
   display: none;
   cursor: pointer;
   font-family: "ta-marugo-gf-03", sans-serif;
-  font-size: 36pt;
   border-bottom: 1px solid black;
   z-index: 999;
 }
@@ -89,6 +76,12 @@ body {
   top: -200px;
   pointer-events: none;
   animation: fall linear forwards;
+  z-index: 10;
+}
+
+.circle-pop {
+  position: fixed;
+  pointer-events: none;
   z-index: 10;
 }
 
@@ -119,7 +112,6 @@ video {
 
 <div id="intro">
   <div id="logoText">burninkidsoysauce</div>
-  <div id="infoText"></div>
 
   <div class="controls">
     <span id="camBtn">Cam</span>
@@ -138,7 +130,6 @@ const logo = document.getElementById("logoText");
 const camBtn = document.getElementById("camBtn");
 const songBtn = document.getElementById("songBtn");
 const changeBtn = document.getElementById("changeBtn");
-const infoText = document.getElementById("infoText");
 
 const video = document.getElementById("video");
 const canvas = document.getElementById("camCanvas");
@@ -147,12 +138,15 @@ const audio = document.getElementById("audio");
 
 const IMG = "./bksscircle.png";
 
-/* CAM SETTINGS */
-const CAM_NOISE = 100;
-const CAM_THRESHOLD = 120;
-const CAM_BLUR = 0.7;
+/* =========================
+   CAM SETTINGS
+   여기만 수정하면 됨
+========================= */
+const CAM_NOISE = 60;
+const CAM_THRESHOLD = 110;
+const CAM_BLUR = 0.5;
 const CAM_MIRROR = true;
-
+const CAM_BG_COLOR = [255,255,255];
 const GREEN_COLOR = [81,255,14];
 const BLACK_COLOR = [0,0,0];
 
@@ -161,7 +155,7 @@ let INK_COLOR = BLACK_COLOR;
 let isGreen = false;
 let placed = [];
 
-/* LOGO SIZE 그대로 */
+/* LOGO RANDOM SIZE */
 function setRandomLogoSize(){
   const chance = Math.random();
   let size;
@@ -174,67 +168,75 @@ function setRandomLogoSize(){
 }
 setRandomLogoSize();
 
-/* DATE + TIME 초까지 */
-function updateInfoText(){
-  const now = new Date();
-
-  const date = now.toLocaleDateString();
-  const time = now.toLocaleTimeString([], {
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit"
-  });
-
-  infoText.innerHTML = date + " " + time;
-}
-updateInfoText();
-setInterval(updateInfoText,1000);
-
 /* CHANGE COLOR */
-changeBtn.onclick = ()=>{
-  isGreen=!isGreen;
+changeBtn.onclick = () => {
+  isGreen = !isGreen;
   INK_COLOR = isGreen ? GREEN_COLOR : BLACK_COLOR;
 };
 
 /* CAM */
-camBtn.onclick = async ()=>{
-  const stream = await navigator.mediaDevices.getUserMedia({video:true});
+camBtn.onclick = async () => {
+  const stream = await navigator.mediaDevices.getUserMedia({ video: true });
   video.srcObject = stream;
 
-  canvas.style.display="block";
-  canvas.style.filter = `blur(${CAM_BLUR}px)`;
+  canvas.style.display = "block";
+  canvas.style.filter = "blur(" + CAM_BLUR + "px)";
   canvas.style.transform = CAM_MIRROR ? "scaleX(-1)" : "scaleX(1)";
-  changeBtn.style.display="block";
+  changeBtn.style.display = "block";
 
-  video.onloadedmetadata = ()=>{
-    canvas.width=window.innerWidth;
-    canvas.height=window.innerHeight;
-    camRunning=true;
+  video.onloadedmetadata = () => {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    camRunning = true;
     processFrame();
   };
 };
 
+window.addEventListener("resize", () => {
+  if (camRunning) {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+  }
+});
+
+function drawVideoCover() {
+  const vw = video.videoWidth;
+  const vh = video.videoHeight;
+  const cw = canvas.width;
+  const ch = canvas.height;
+
+  const scale = Math.max(cw / vw, ch / vh);
+  const nw = vw * scale;
+  const nh = vh * scale;
+  const dx = (cw - nw) / 2;
+  const dy = (ch - nh) / 2;
+
+  ctx.drawImage(video, dx, dy, nw, nh);
+}
+
 function processFrame(){
   if(!camRunning) return;
 
-  ctx.drawImage(video,0,0,canvas.width,canvas.height);
+  drawVideoCover();
 
-  let frame=ctx.getImageData(0,0,canvas.width,canvas.height);
-  let data=frame.data;
+  let frame = ctx.getImageData(0,0,canvas.width,canvas.height);
+  let data = frame.data;
 
   for(let i=0;i<data.length;i+=4){
-    let gray=(data[i]+data[i+1]+data[i+2])/3;
-    gray+=(Math.random()-0.5)*CAM_NOISE;
-    let v=gray<CAM_THRESHOLD?0:255;
+    let gray = (data[i]+data[i+1]+data[i+2])/3;
 
-    if(v===0){
-      data[i]=INK_COLOR[0];
-      data[i+1]=INK_COLOR[1];
-      data[i+2]=INK_COLOR[2];
+    gray += (Math.random()-0.5) * CAM_NOISE;
+
+    let v = gray < CAM_THRESHOLD ? 0 : 255;
+
+    if (v === 0) {
+      data[i] = INK_COLOR[0];
+      data[i+1] = INK_COLOR[1];
+      data[i+2] = INK_COLOR[2];
     } else {
-      data[i]=255;
-      data[i+1]=255;
-      data[i+2]=255;
+      data[i] = CAM_BG_COLOR[0];
+      data[i+1] = CAM_BG_COLOR[1];
+      data[i+2] = CAM_BG_COLOR[2];
     }
   }
 
@@ -243,33 +245,43 @@ function processFrame(){
 }
 
 /* SONG */
-songBtn.onclick = ()=>{
-  document.getElementById("intro").style.display="none";
+songBtn.onclick = () => {
+  document.getElementById("intro").style.display = "none";
 
-  const wrap=document.createElement("div");
+  const wrap = document.createElement("div");
 
-  wrap.style.position="fixed";
-  wrap.style.inset="0";
-  wrap.style.display="flex";
-  wrap.style.alignItems="center";
-  wrap.style.justifyContent="center";
-  wrap.style.gap="70px";
-  wrap.style.fontFamily='"ta-marugo-gf-03", sans-serif';
-  wrap.style.zIndex="200";
+  wrap.style.position = "fixed";
+  wrap.style.inset = "0";
+  wrap.style.display = "flex";
+  wrap.style.alignItems = "center";
+  wrap.style.justifyContent = "center";
+  wrap.style.gap = "70px";
+  wrap.style.fontFamily = '"ta-marugo-gf-03", sans-serif';
+  wrap.style.zIndex = "100";
 
-  wrap.innerHTML=`
+  wrap.innerHTML = `
     <style>
-    @keyframes spin{from{transform:rotate(0)}to{transform:rotate(360deg)}}
+      @keyframes spin {
+        from { transform: rotate(0deg); }
+        to { transform: rotate(360deg); }
+      }
     </style>
 
     <img src="./again1.png" style="
-      width:512px;
-      height:512px;
+      width:360px;
+      height:360px;
       object-fit:cover;
-      animation:spin 20s linear infinite;
+      animation: spin 20s linear infinite;
+      position:relative;
+      z-index:0;
     ">
 
-    <div id="songList" style="font-size:28px;line-height:1.6;">
+    <div id="songList" style="
+      font-size:28px;
+      line-height:1.6;
+      position:relative;
+      z-index:2;
+    ">
       <div data="2000.mp3">2000</div>
       <div data="wiimydadgotmeforchristmas.mp3">wiimydadgotmeforchristmas</div>
       <div data="ps2iplayedwithmybrother.mp3">ps2iplayedwithmybrother</div>
@@ -288,13 +300,13 @@ songBtn.onclick = ()=>{
 
   document.body.appendChild(wrap);
 
-  const items=wrap.querySelectorAll("#songList div");
+  const items = wrap.querySelectorAll("#songList div");
 
   items.forEach(el=>{
-    el.style.cursor="pointer";
+    el.style.cursor = "pointer";
 
-    el.onclick=()=>{
-      audio.src="./"+el.getAttribute("data");
+    el.onclick = () => {
+      audio.src = "./" + el.getAttribute("data");
       audio.play();
 
       items.forEach(i=>i.style.color="black");
@@ -308,7 +320,7 @@ function isOverlap(x,y,r){
   for(let p of placed){
     let dx=x-p.x;
     let dy=y-p.y;
-    if(Math.sqrt(dx*dx+dy*dy)<r+p.r) return true;
+    if(Math.sqrt(dx*dx+dy*dy) < r+p.r) return true;
   }
   return false;
 }
@@ -317,7 +329,7 @@ function findSpot(size){
   let r=size/2;
 
   for(let y=window.innerHeight-r;y>r;y-=Math.max(2,r*0.25)){
-    for(let i=0;i<500;i++){
+    for(let i=0;i<700;i++){
       let x=r+Math.random()*(window.innerWidth-size);
       if(!isOverlap(x,y,r)) return {x,y};
     }
@@ -325,35 +337,118 @@ function findSpot(size){
   return null;
 }
 
-logo.onclick=()=>{
-  let count=0;
+function chooseCirclePattern(){
+  const r = Math.random();
 
-  const drop=setInterval(()=>{
-    let size=10+Math.random()*80;
+  if (r < 0.18) return "tinyFull";
+  if (r < 0.36) return "mediumFull";
+  if (r < 0.56) return "mixed";
+  if (r < 0.74) return "smallHuge";
+  if (r < 0.90) return "fallingMix";
+  return "pureRandom";
+}
 
-    if(Math.random()<0.1){
-      size=180+Math.random()*260;
+function getCircleSize(pattern, count){
+  if (count === 12 && Math.random() < 0.7) {
+    return Math.max(window.innerWidth, window.innerHeight) * 1.12;
+  }
+
+  if (pattern === "tinyFull") {
+    return 4 + Math.random() * 13;
+  }
+
+  if (pattern === "mediumFull") {
+    return 28 + Math.random() * 55;
+  }
+
+  if (pattern === "mixed") {
+    const c = Math.random();
+    if (c < 0.55) return 6 + Math.random() * 25;
+    if (c < 0.9) return 35 + Math.random() * 85;
+    return 130 + Math.random() * 220;
+  }
+
+  if (pattern === "smallHuge") {
+    if (count === 12) return Math.max(window.innerWidth, window.innerHeight) * 1.15;
+    return 5 + Math.random() * 18;
+  }
+
+  if (pattern === "fallingMix") {
+    const c = Math.random();
+    if (c < 0.5) return 10 + Math.random() * 30;
+    if (c < 0.85) return 45 + Math.random() * 90;
+    return 160 + Math.random() * 240;
+  }
+
+  const c = Math.random();
+  if (c < 0.45) return 5 + Math.random() * 30;
+  if (c < 0.75) return 40 + Math.random() * 110;
+  if (c < 0.95) return 120 + Math.random() * 260;
+  return Math.max(window.innerWidth, window.innerHeight) * (0.8 + Math.random() * 0.5);
+}
+
+function getCircleTotal(pattern){
+  if (pattern === "tinyFull") return 2600;
+  if (pattern === "mediumFull") return 950;
+  if (pattern === "mixed") return 1300;
+  if (pattern === "smallHuge") return 1800;
+  if (pattern === "fallingMix") return 1100;
+  return 1400;
+}
+
+logo.onclick = ()=>{
+  placed = [];
+  let count = 0;
+  const pattern = chooseCirclePattern();
+  const total = getCircleTotal(pattern);
+
+  const drop = setInterval(()=>{
+
+    let size = getCircleSize(pattern, count);
+
+    let spot;
+    const huge = size > Math.min(window.innerWidth, window.innerHeight) * 0.75;
+
+    if (huge) {
+      spot = {
+        x: window.innerWidth / 2,
+        y: window.innerHeight / 2
+      };
+    } else {
+      spot = findSpot(size);
     }
 
-    let spot=findSpot(size);
-    if(!spot){clearInterval(drop);return;}
+    if(!spot){
+      clearInterval(drop);
+      return;
+    }
 
-    let img=document.createElement("img");
-    img.src=IMG;
-    img.className="circle-img";
+    let img = document.createElement("img");
+    img.src = IMG;
 
-    img.style.width=size+"px";
-    img.style.height=size+"px";
-    img.style.left=(spot.x-size/2)+"px";
-    img.style.setProperty("--stopY",(spot.y-size/2)+"px");
+    const popMode = Math.random() < 0.5;
+    img.className = popMode ? "circle-pop" : "circle-img";
+
+    img.style.width = size + "px";
+    img.style.height = size + "px";
+    img.style.left = (spot.x-size/2) + "px";
+
+    if (popMode) {
+      img.style.top = (spot.y-size/2) + "px";
+    } else {
+      img.style.setProperty("--stopY",(spot.y-size/2)+"px");
+      img.style.animationDuration = 0.3 + Math.random()*1.7 + "s";
+    }
 
     document.body.appendChild(img);
 
     placed.push({x:spot.x,y:spot.y,r:size/2});
 
-    if(++count>900) clearInterval(drop);
+    count++;
 
-  },10);
+    if(count >= total) clearInterval(drop);
+
+  }, pattern === "tinyFull" ? 3 : 10);
 };
 </script>
 
