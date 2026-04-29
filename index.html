@@ -152,7 +152,6 @@ const IMG = "./bksscircle.png";
 
 /* =========================
    CAM SETTINGS
-   여기만 수정하면 됨
 ========================= */
 const CAM_NOISE = 60;
 const CAM_THRESHOLD = 110;
@@ -167,6 +166,10 @@ let INK_COLOR = BLACK_COLOR;
 let isGreen = false;
 let placed = [];
 
+/* 🔥 추가된 부분 */
+let currentFacingMode = "user";
+let currentStream = null;
+
 /* LOGO RANDOM SIZE */
 function setRandomLogoSize(){
   const chance = Math.random();
@@ -180,32 +183,37 @@ function setRandomLogoSize(){
 }
 setRandomLogoSize();
 
-/* DATE + TIME + SECOND */
+/* DATE */
 function updateInfoText(){
   const now = new Date();
-
   const date = now.toLocaleDateString();
   const time = now.toLocaleTimeString([], {
     hour: "2-digit",
     minute: "2-digit",
     second: "2-digit"
   });
-
   infoText.innerHTML = date + " " + time;
 }
-
 updateInfoText();
 setInterval(updateInfoText, 1000);
 
-/* CHANGE COLOR */
+/* CHANGE */
 changeBtn.onclick = () => {
   isGreen = !isGreen;
   INK_COLOR = isGreen ? GREEN_COLOR : BLACK_COLOR;
 };
 
-/* CAM */
-camBtn.onclick = async () => {
-  const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+/* 🔥 카메라 시작 함수 (추가) */
+async function startCamera(facingMode) {
+  if (currentStream) {
+    currentStream.getTracks().forEach(track => track.stop());
+  }
+
+  const stream = await navigator.mediaDevices.getUserMedia({
+    video: { facingMode: facingMode }
+  });
+
+  currentStream = stream;
   video.srcObject = stream;
 
   canvas.style.display = "block";
@@ -219,7 +227,18 @@ camBtn.onclick = async () => {
     camRunning = true;
     processFrame();
   };
+}
+
+/* 🔥 Cam 버튼 변경 */
+camBtn.onclick = () => {
+  startCamera(currentFacingMode);
 };
+
+/* 🔥 더블탭 전환 */
+canvas.addEventListener("dblclick", () => {
+  currentFacingMode = currentFacingMode === "user" ? "environment" : "user";
+  startCamera(currentFacingMode);
+});
 
 window.addEventListener("resize", () => {
   if (camRunning) {
@@ -253,9 +272,7 @@ function processFrame(){
 
   for(let i=0;i<data.length;i+=4){
     let gray = (data[i]+data[i+1]+data[i+2])/3;
-
     gray += (Math.random()-0.5) * CAM_NOISE;
-
     let v = gray < CAM_THRESHOLD ? 0 : 255;
 
     if (v === 0) {
@@ -272,285 +289,6 @@ function processFrame(){
   ctx.putImageData(frame,0,0);
   requestAnimationFrame(processFrame);
 }
-
-/* SONG */
-songBtn.onclick = () => {
-  document.getElementById("intro").style.display = "none";
-
-  const wrap = document.createElement("div");
-
-  wrap.style.position = "fixed";
-  wrap.style.inset = "0";
-  wrap.style.display = "flex";
-  wrap.style.alignItems = "center";
-  wrap.style.justifyContent = "center";
-  wrap.style.gap = "70px";
-  wrap.style.fontFamily = '"ta-marugo-gf-03", sans-serif';
-  wrap.style.zIndex = "100";
-
-  wrap.innerHTML = `
-    <style>
-      @keyframes spin {
-        from { transform: rotate(0deg); }
-        to { transform: rotate(360deg); }
-      }
-    </style>
-
-    <img src="./again1.png" style="
-      width:360px;
-      height:360px;
-      object-fit:cover;
-      animation: spin 20s linear infinite;
-      position:relative;
-      z-index:0;
-    ">
-
-    <div id="songList" style="
-      font-size:28px;
-      line-height:1.6;
-      position:relative;
-      z-index:2;
-    ">
-      <div data="2000.mp3">2000</div>
-      <div data="wiimydadgotmeforchristmas.mp3">wiimydadgotmeforchristmas</div>
-      <div data="ps2iplayedwithmybrother.mp3">ps2iplayedwithmybrother</div>
-      <div data="girl.mp3">girl</div>
-      <div data="2ear.mp3">2ear</div>
-      <div data="eolssu.mp3">eolssu</div>
-      <div data="dance.mp3">dance</div>
-      <div data="how sweet it is.mp3">how sweet it is</div>
-      <div data="get up.mp3">get up</div>
-      <div data="sierra.mp3">sierra</div>
-      <div data="friends.mp3">friends</div>
-      <div data="emptyyourmind.mp3">emptyyourmind</div>
-      <div data="circle.mp3">circle</div>
-    </div>
-  `;
-
-  document.body.appendChild(wrap);
-
-  const items = wrap.querySelectorAll("#songList div");
-
-  items.forEach(el=>{
-    el.style.cursor = "pointer";
-
-    el.onclick = () => {
-      audio.src = "./" + el.getAttribute("data");
-      audio.play();
-
-      items.forEach(i=>i.style.color="black");
-      el.style.color="#51ff0e";
-    };
-  });
-};
-
-/* CIRCLES */
-function isOverlap(x,y,r){
-  for(let p of placed){
-    let dx=x-p.x;
-    let dy=y-p.y;
-    if(Math.sqrt(dx*dx+dy*dy) < r+p.r) return true;
-  }
-  return false;
-}
-
-function findSpot(size){
-  let r=size/2;
-
-  for(let y=window.innerHeight-r;y>r;y-=Math.max(2,r*0.25)){
-    for(let i=0;i<700;i++){
-      let x=r+Math.random()*(window.innerWidth-size);
-      if(!isOverlap(x,y,r)) return {x,y};
-    }
-  }
-  return null;
-}
-
-function chooseCirclePattern(){
-  const r = Math.random();
-
-  if (r < 0.18) return "tinyFull";
-  if (r < 0.36) return "mediumFull";
-  if (r < 0.56) return "mixed";
-  if (r < 0.74) return "smallHuge";
-  if (r < 0.90) return "fallingMix";
-  return "pureRandom";
-}
-
-function getCircleSize(pattern, count){
-  if (count === 12 && Math.random() < 0.7) {
-    return Math.max(window.innerWidth, window.innerHeight) * 1.12;
-  }
-
-  if (pattern === "tinyFull") {
-    return 4 + Math.random() * 13;
-  }
-
-  if (pattern === "mediumFull") {
-    return 28 + Math.random() * 55;
-  }
-
-  if (pattern === "mixed") {
-    const c = Math.random();
-    if (c < 0.55) return 6 + Math.random() * 25;
-    if (c < 0.9) return 35 + Math.random() * 85;
-    return 130 + Math.random() * 220;
-  }
-
-  if (pattern === "smallHuge") {
-    if (count === 12) return Math.max(window.innerWidth, window.innerHeight) * 1.15;
-    return 5 + Math.random() * 18;
-  }
-
-  if (pattern === "fallingMix") {
-    const c = Math.random();
-    if (c < 0.5) return 10 + Math.random() * 30;
-    if (c < 0.85) return 45 + Math.random() * 90;
-    return 160 + Math.random() * 240;
-  }
-
-  const c = Math.random();
-  if (c < 0.45) return 5 + Math.random() * 30;
-  if (c < 0.75) return 40 + Math.random() * 110;
-  if (c < 0.95) return 120 + Math.random() * 260;
-  return Math.max(window.innerWidth, window.innerHeight) * (0.8 + Math.random() * 0.5);
-}
-
-function getCircleTotal(pattern){
-  if (pattern === "tinyFull") return 2600;
-  if (pattern === "mediumFull") return 950;
-  if (pattern === "mixed") return 1300;
-  if (pattern === "smallHuge") return 1800;
-  if (pattern === "fallingMix") return 1100;
-  return 1400;
-}
-
-let circleTimer = null;
-
-logo.onclick = () => {
-  // 이미 떨어지는 중이면 멈춤
-  if (circleTimer) {
-    clearInterval(circleTimer);
-    circleTimer = null;
-  }
-
-  placed = [];
-
-  // 기존 원들 제거
-  document.querySelectorAll(".circle-img, .circle-pop").forEach(el => el.remove());
-
-  let count = 0;
-
-  const roll = Math.random();
-  let pattern;
-
-  if (roll < 0.25) pattern = "tinyFull";
-  else if (roll < 0.45) pattern = "mediumFull";
-  else if (roll < 0.70) pattern = "mixed";
-  else if (roll < 0.90) pattern = "smallHuge";
-  else pattern = "random";
-
-  // 전부 떨어지거나, 전부 뚝 생기거나 통일
-  const motion = Math.random() < 0.6 ? "fall" : "pop";
-
-  // 15번 중 1번만 큰 원
-  const hasHuge = Math.random() < 1 / 15;
-  const hugeAt = 12;
-
-  function getSize() {
-    if (hasHuge && count === hugeAt) {
-      return Math.min(window.innerWidth, window.innerHeight) * 0.72;
-    }
-
-    if (pattern === "tinyFull") {
-      return 4 + Math.random() * 12;
-    }
-
-    if (pattern === "mediumFull") {
-      return 24 + Math.random() * 48;
-    }
-
-    if (pattern === "mixed") {
-      const c = Math.random();
-      if (c < 0.65) return 6 + Math.random() * 24;
-      if (c < 0.93) return 30 + Math.random() * 70;
-      return 90 + Math.random() * 90;
-    }
-
-    if (pattern === "smallHuge") {
-      const c = Math.random();
-      if (c < 0.92) return 5 + Math.random() * 18;
-      return 70 + Math.random() * 90;
-    }
-
-    const c = Math.random();
-    if (c < 0.55) return 6 + Math.random() * 24;
-    if (c < 0.85) return 28 + Math.random() * 65;
-    return 70 + Math.random() * 120;
-  }
-
-  function getTotal() {
-    if (pattern === "tinyFull") return 2400;
-    if (pattern === "mediumFull") return 900;
-    if (pattern === "mixed") return 1300;
-    if (pattern === "smallHuge") return 1800;
-    return 1200;
-  }
-
-  const total = getTotal();
-
-  circleTimer = setInterval(() => {
-    const size = getSize();
-
-    let spot;
-    const isHuge = hasHuge && count === hugeAt;
-
-    if (isHuge) {
-      spot = {
-        x: window.innerWidth / 2,
-        y: window.innerHeight / 2
-      };
-    } else {
-      spot = findSpot(size);
-    }
-
-    if (!spot) {
-      clearInterval(circleTimer);
-      circleTimer = null;
-      return;
-    }
-
-    const img = document.createElement("img");
-    img.src = IMG;
-    img.className = motion === "fall" ? "circle-img" : "circle-pop";
-
-    img.style.width = size + "px";
-    img.style.height = size + "px";
-    img.style.left = (spot.x - size / 2) + "px";
-
-    if (motion === "fall") {
-      img.style.setProperty("--stopY", (spot.y - size / 2) + "px");
-      img.style.animationDuration = 0.5 + Math.random() * 1.8 + "s";
-    } else {
-      img.style.top = (spot.y - size / 2) + "px";
-    }
-
-    document.body.appendChild(img);
-
-    placed.push({
-      x: spot.x,
-      y: spot.y,
-      r: size / 2
-    });
-
-    count++;
-
-    if (count >= total) {
-      clearInterval(circleTimer);
-      circleTimer = null;
-    }
-  }, pattern === "tinyFull" ? 3 : 9);
-};
 </script>
 
 </body>
