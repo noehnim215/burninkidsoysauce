@@ -79,6 +79,17 @@ body {
   z-index: 999;
 }
 
+#flipBtn {
+  position: fixed;
+  left: 20px;
+  bottom: 20px;
+  display: none;
+  cursor: pointer;
+  font-family: "ta-marugo-gf-03", sans-serif;
+  border-bottom: 1px solid black;
+  z-index: 999;
+}
+
 .circle-img {
   position: fixed;
   top: -200px;
@@ -106,7 +117,7 @@ body {
   width: 100vw;
   height: 100vh;
   display: none;
-  transform: scaleX(-1);
+  transform: scaleX(1);
   z-index: 1;
 }
 
@@ -123,12 +134,12 @@ video {
   <div id="infoText"></div>
 
   <div class="controls">
-    <span id="flipBtn">Flip</span>
     <span id="camBtn">Cam</span>
     <span id="songBtn">Song</span>
   </div>
 </div>
 
+<div id="flipBtn">Flip</div>
 <div id="changeBtn">Change</div>
 
 <video id="video" autoplay muted playsinline></video>
@@ -137,9 +148,9 @@ video {
 
 <script>
 const logo = document.getElementById("logoText");
-const flipBtn = document.getElementById("flipBtn");
 const camBtn = document.getElementById("camBtn");
 const songBtn = document.getElementById("songBtn");
+const flipBtn = document.getElementById("flipBtn");
 const changeBtn = document.getElementById("changeBtn");
 const infoText = document.getElementById("infoText");
 
@@ -153,7 +164,6 @@ const IMG = "./bksscircle.png";
 const CAM_NOISE = 60;
 const CAM_THRESHOLD = 110;
 const CAM_BLUR = 0.5;
-const CAM_MIRROR = true;
 const CAM_BG_COLOR = [255,255,255];
 const GREEN_COLOR = [81,255,14];
 const BLACK_COLOR = [0,0,0];
@@ -222,8 +232,10 @@ async function startCamera(facingMode) {
 
   canvas.style.display = "block";
   canvas.style.filter = "blur(" + CAM_BLUR + "px)";
-  canvas.style.transform = CAM_MIRROR ? "scaleX(-1)" : "scaleX(1)";
+  canvas.style.transform = currentFacingMode === "user" ? "scaleX(1)" : "scaleX(-1)";
+
   changeBtn.style.display = "block";
+  flipBtn.style.display = "block";
 
   video.onloadedmetadata = () => {
     canvas.width = window.innerWidth;
