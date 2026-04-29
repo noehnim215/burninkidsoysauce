@@ -48,7 +48,6 @@ body {
   cursor: pointer;
 }
 
-/* 날짜 / 시간 폰트 크기 */
 #infoText {
   margin-top: 12px;
   font-family: "ta-marugo-gf-03", sans-serif;
@@ -57,7 +56,6 @@ body {
   text-align: center;
 }
 
-/* Cam / Song 폰트 크기 여기서 수정 */
 .controls {
   margin-top: 20px;
   font-family: "ta-marugo-gf-03", sans-serif;
@@ -125,6 +123,7 @@ video {
   <div id="infoText"></div>
 
   <div class="controls">
+    <span id="flipBtn">Flip</span>
     <span id="camBtn">Cam</span>
     <span id="songBtn">Song</span>
   </div>
@@ -138,6 +137,7 @@ video {
 
 <script>
 const logo = document.getElementById("logoText");
+const flipBtn = document.getElementById("flipBtn");
 const camBtn = document.getElementById("camBtn");
 const songBtn = document.getElementById("songBtn");
 const changeBtn = document.getElementById("changeBtn");
@@ -150,10 +150,6 @@ const audio = document.getElementById("audio");
 
 const IMG = "./bksscircle.png";
 
-/* =========================
-   CAM SETTINGS
-   여기만 수정하면 됨
-========================= */
 const CAM_NOISE = 60;
 const CAM_THRESHOLD = 110;
 const CAM_BLUR = 0.5;
@@ -167,7 +163,9 @@ let INK_COLOR = BLACK_COLOR;
 let isGreen = false;
 let placed = [];
 
-/* LOGO RANDOM SIZE */
+let currentStream = null;
+let currentFacingMode = "user";
+
 function setRandomLogoSize(){
   const chance = Math.random();
   let size;
@@ -180,7 +178,6 @@ function setRandomLogoSize(){
 }
 setRandomLogoSize();
 
-/* DATE + TIME + SECOND */
 function updateInfoText(){
   const now = new Date();
 
@@ -197,15 +194,30 @@ function updateInfoText(){
 updateInfoText();
 setInterval(updateInfoText, 1000);
 
-/* CHANGE COLOR */
 changeBtn.onclick = () => {
   isGreen = !isGreen;
   INK_COLOR = isGreen ? GREEN_COLOR : BLACK_COLOR;
 };
 
-/* CAM */
-camBtn.onclick = async () => {
-  const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+camBtn.onclick = () => {
+  startCamera(currentFacingMode);
+};
+
+flipBtn.onclick = () => {
+  currentFacingMode = currentFacingMode === "user" ? "environment" : "user";
+  startCamera(currentFacingMode);
+};
+
+async function startCamera(facingMode) {
+  if (currentStream) {
+    currentStream.getTracks().forEach(track => track.stop());
+  }
+
+  const stream = await navigator.mediaDevices.getUserMedia({
+    video: { facingMode: facingMode }
+  });
+
+  currentStream = stream;
   video.srcObject = stream;
 
   canvas.style.display = "block";
@@ -219,7 +231,7 @@ camBtn.onclick = async () => {
     camRunning = true;
     processFrame();
   };
-};
+}
 
 window.addEventListener("resize", () => {
   if (camRunning) {
@@ -273,7 +285,6 @@ function processFrame(){
   requestAnimationFrame(processFrame);
 }
 
-/* SONG */
 songBtn.onclick = () => {
   document.getElementById("intro").style.display = "none";
 
@@ -344,7 +355,6 @@ songBtn.onclick = () => {
   });
 };
 
-/* CIRCLES */
 function isOverlap(x,y,r){
   for(let p of placed){
     let dx=x-p.x;
@@ -366,69 +376,9 @@ function findSpot(size){
   return null;
 }
 
-function chooseCirclePattern(){
-  const r = Math.random();
-
-  if (r < 0.18) return "tinyFull";
-  if (r < 0.36) return "mediumFull";
-  if (r < 0.56) return "mixed";
-  if (r < 0.74) return "smallHuge";
-  if (r < 0.90) return "fallingMix";
-  return "pureRandom";
-}
-
-function getCircleSize(pattern, count){
-  if (count === 12 && Math.random() < 0.7) {
-    return Math.max(window.innerWidth, window.innerHeight) * 1.12;
-  }
-
-  if (pattern === "tinyFull") {
-    return 4 + Math.random() * 13;
-  }
-
-  if (pattern === "mediumFull") {
-    return 28 + Math.random() * 55;
-  }
-
-  if (pattern === "mixed") {
-    const c = Math.random();
-    if (c < 0.55) return 6 + Math.random() * 25;
-    if (c < 0.9) return 35 + Math.random() * 85;
-    return 130 + Math.random() * 220;
-  }
-
-  if (pattern === "smallHuge") {
-    if (count === 12) return Math.max(window.innerWidth, window.innerHeight) * 1.15;
-    return 5 + Math.random() * 18;
-  }
-
-  if (pattern === "fallingMix") {
-    const c = Math.random();
-    if (c < 0.5) return 10 + Math.random() * 30;
-    if (c < 0.85) return 45 + Math.random() * 90;
-    return 160 + Math.random() * 240;
-  }
-
-  const c = Math.random();
-  if (c < 0.45) return 5 + Math.random() * 30;
-  if (c < 0.75) return 40 + Math.random() * 110;
-  if (c < 0.95) return 120 + Math.random() * 260;
-  return Math.max(window.innerWidth, window.innerHeight) * (0.8 + Math.random() * 0.5);
-}
-
-function getCircleTotal(pattern){
-  if (pattern === "tinyFull") return 2600;
-  if (pattern === "mediumFull") return 950;
-  if (pattern === "mixed") return 1300;
-  if (pattern === "smallHuge") return 1800;
-  if (pattern === "fallingMix") return 1100;
-  return 1400;
-}
-
 let circleTimer = null;
 
 logo.onclick = () => {
-  // 이미 떨어지는 중이면 멈춤
   if (circleTimer) {
     clearInterval(circleTimer);
     circleTimer = null;
@@ -436,7 +386,6 @@ logo.onclick = () => {
 
   placed = [];
 
-  // 기존 원들 제거
   document.querySelectorAll(".circle-img, .circle-pop").forEach(el => el.remove());
 
   let count = 0;
@@ -450,10 +399,8 @@ logo.onclick = () => {
   else if (roll < 0.90) pattern = "smallHuge";
   else pattern = "random";
 
-  // 전부 떨어지거나, 전부 뚝 생기거나 통일
   const motion = Math.random() < 0.6 ? "fall" : "pop";
 
-  // 15번 중 1번만 큰 원
   const hasHuge = Math.random() < 1 / 15;
   const hugeAt = 12;
 
