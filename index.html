@@ -33,7 +33,6 @@ body {
   overflow: hidden;
 }
 
-/* 🔥 모든 텍스트 효과 제거 */
 * {
   -webkit-text-stroke: 0px !important;
   text-stroke: 0px !important;
@@ -58,26 +57,19 @@ body {
 #infoText {
   margin-top: 10px;
   font-family: "ta-marugo-gf-03", sans-serif;
-  font-size: 14px;
+  font-size: 36pt;
 }
 
 .controls {
   margin-top: 20px;
   font-family: "ta-marugo-gf-03", sans-serif;
-  font-size: 16px;
+  font-size: 36pt;
 }
 
 .controls span {
   margin: 0 12px;
   cursor: pointer;
   border-bottom: 1px solid black;
-}
-
-/* 모바일 확대 */
-@media (max-width: 768px) {
-  .controls {
-    font-size: 23px;
-  }
 }
 
 #changeBtn {
@@ -87,6 +79,7 @@ body {
   display: none;
   cursor: pointer;
   font-family: "ta-marugo-gf-03", sans-serif;
+  font-size: 36pt;
   border-bottom: 1px solid black;
   z-index: 999;
 }
@@ -168,7 +161,7 @@ let INK_COLOR = BLACK_COLOR;
 let isGreen = false;
 let placed = [];
 
-/* LOGO SIZE */
+/* LOGO SIZE 그대로 */
 function setRandomLogoSize(){
   const chance = Math.random();
   let size;
@@ -181,10 +174,18 @@ function setRandomLogoSize(){
 }
 setRandomLogoSize();
 
-/* DATE + TIME */
+/* DATE + TIME 초까지 */
 function updateInfoText(){
   const now = new Date();
-  infoText.innerHTML = now.toLocaleDateString() + " " + now.toLocaleTimeString();
+
+  const date = now.toLocaleDateString();
+  const time = now.toLocaleTimeString([], {
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit"
+  });
+
+  infoText.innerHTML = date + " " + time;
 }
 updateInfoText();
 setInterval(updateInfoText,1000);
@@ -241,6 +242,67 @@ function processFrame(){
   requestAnimationFrame(processFrame);
 }
 
+/* SONG */
+songBtn.onclick = ()=>{
+  document.getElementById("intro").style.display="none";
+
+  const wrap=document.createElement("div");
+
+  wrap.style.position="fixed";
+  wrap.style.inset="0";
+  wrap.style.display="flex";
+  wrap.style.alignItems="center";
+  wrap.style.justifyContent="center";
+  wrap.style.gap="70px";
+  wrap.style.fontFamily='"ta-marugo-gf-03", sans-serif';
+  wrap.style.zIndex="200";
+
+  wrap.innerHTML=`
+    <style>
+    @keyframes spin{from{transform:rotate(0)}to{transform:rotate(360deg)}}
+    </style>
+
+    <img src="./again1.png" style="
+      width:512px;
+      height:512px;
+      object-fit:cover;
+      animation:spin 20s linear infinite;
+    ">
+
+    <div id="songList" style="font-size:28px;line-height:1.6;">
+      <div data="2000.mp3">2000</div>
+      <div data="wiimydadgotmeforchristmas.mp3">wiimydadgotmeforchristmas</div>
+      <div data="ps2iplayedwithmybrother.mp3">ps2iplayedwithmybrother</div>
+      <div data="girl.mp3">girl</div>
+      <div data="2ear.mp3">2ear</div>
+      <div data="eolssu.mp3">eolssu</div>
+      <div data="dance.mp3">dance</div>
+      <div data="how sweet it is.mp3">how sweet it is</div>
+      <div data="get up.mp3">get up</div>
+      <div data="sierra.mp3">sierra</div>
+      <div data="friends.mp3">friends</div>
+      <div data="emptyyourmind.mp3">emptyyourmind</div>
+      <div data="circle.mp3">circle</div>
+    </div>
+  `;
+
+  document.body.appendChild(wrap);
+
+  const items=wrap.querySelectorAll("#songList div");
+
+  items.forEach(el=>{
+    el.style.cursor="pointer";
+
+    el.onclick=()=>{
+      audio.src="./"+el.getAttribute("data");
+      audio.play();
+
+      items.forEach(i=>i.style.color="black");
+      el.style.color="#51ff0e";
+    };
+  });
+};
+
 /* CIRCLES */
 function isOverlap(x,y,r){
   for(let p of placed){
@@ -269,6 +331,10 @@ logo.onclick=()=>{
   const drop=setInterval(()=>{
     let size=10+Math.random()*80;
 
+    if(Math.random()<0.1){
+      size=180+Math.random()*260;
+    }
+
     let spot=findSpot(size);
     if(!spot){clearInterval(drop);return;}
 
@@ -285,7 +351,7 @@ logo.onclick=()=>{
 
     placed.push({x:spot.x,y:spot.y,r:size/2});
 
-    if(++count>800) clearInterval(drop);
+    if(++count>900) clearInterval(drop);
 
   },10);
 };
