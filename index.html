@@ -216,13 +216,21 @@ if (navigator.geolocation) {
       );
       const data = await res.json();
 
-      locationText =
-        data.address.city ||
-        data.address.town ||
-        data.address.village ||
-        data.address.borough ||
-        data.address.state ||
-        "";
+     locationText = data.display_name || [
+  data.address.country,
+  data.address.state,
+  data.address.province,
+  data.address.county,
+  data.address.city || data.address.town || data.address.village,
+  data.address.city_district,
+  data.address.borough,
+  data.address.suburb,
+  data.address.neighbourhood,
+  data.address.quarter,
+  data.address.road,
+  data.address.house_number,
+  data.address.postcode
+].filter(Boolean).join(" ");
 
       updateInfoText();
     } catch (e) {
