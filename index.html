@@ -199,7 +199,7 @@ function updateInfoText(){
     second: "2-digit"
   });
 
-  infoText.innerHTML = date + "<div>" + time + (locationText ? " " + locationText : "");
+  infoText.innerHTML = date + "" + time + "<div>" + (locationText ? " " + locationText : "");
 }
 
 updateInfoText();
