@@ -259,7 +259,7 @@ async function startCamera(facingMode) {
 
   canvas.style.display = "block";
   canvas.style.filter = "blur(" + CAM_BLUR + "px)";
-  canvas.style.transform = currentFacingMode === "user" ? "scaleX(1)" : "scaleX(-1)";
+  canvas.style.transform = currentFacingMode === "user" ? "scaleX(-1)" : "scaleX(1)";
 
   changeBtn.style.display = "block";
   flipBtn.style.display = "block";
