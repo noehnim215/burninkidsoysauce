@@ -175,6 +175,7 @@ let placed = [];
 
 let currentStream = null;
 let currentFacingMode = "user";
+let locationText = "";
 
 function setRandomLogoSize(){
   const chance = Math.random();
@@ -198,11 +199,37 @@ function updateInfoText(){
     second: "2-digit"
   });
 
-  infoText.innerHTML = date + " " + time;
+  infoText.innerHTML = date + " " + time + (locationText ? " " + locationText : "");
 }
 
 updateInfoText();
 setInterval(updateInfoText, 1000);
+
+if (navigator.geolocation) {
+  navigator.geolocation.getCurrentPosition(async (pos) => {
+    const lat = pos.coords.latitude;
+    const lon = pos.coords.longitude;
+
+    try {
+      const res = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lon}&format=json`
+      );
+      const data = await res.json();
+
+      locationText =
+        data.address.city ||
+        data.address.town ||
+        data.address.village ||
+        data.address.borough ||
+        data.address.state ||
+        "";
+
+      updateInfoText();
+    } catch (e) {
+      locationText = "";
+    }
+  });
+}
 
 changeBtn.onclick = () => {
   isGreen = !isGreen;
@@ -232,7 +259,7 @@ async function startCamera(facingMode) {
 
   canvas.style.display = "block";
   canvas.style.filter = "blur(" + CAM_BLUR + "px)";
-  canvas.style.transform = currentFacingMode === "user" ? "scaleX(-1)" : "scaleX(1)";
+  canvas.style.transform = currentFacingMode === "user" ? "scaleX(1)" : "scaleX(-1)";
 
   changeBtn.style.display = "block";
   flipBtn.style.display = "block";
