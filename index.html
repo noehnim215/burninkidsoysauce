@@ -74,7 +74,7 @@ body {
   bottom: 20px;
   display: none;
   cursor: pointer;
-  font-family: "ta-marugo-gf-03", sans-serif;
+  font-family: "ta-marugo-gf-04", sans-serif;
   border-bottom: 1px solid black;
   z-index: 999;
 }
@@ -85,7 +85,7 @@ body {
   bottom: 20px;
   display: none;
   cursor: pointer;
-  font-family: "ta-marugo-gf-03", sans-serif;
+  font-family: "ta-marugo-gf-04", sans-serif;
   border-bottom: 1px solid black;
   z-index: 999;
 }
@@ -199,7 +199,7 @@ function updateInfoText(){
     second: "2-digit"
   });
 
-  infoText.innerHTML = date + " " + time + (locationText ? " " + locationText : "");
+  infoText.innerHTML = date + "<div>" + time + (locationText ? " " + locationText : "");
 }
 
 updateInfoText();
